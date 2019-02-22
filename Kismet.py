@@ -1,13 +1,12 @@
-import pygame
+import pygame as pg
 import pytmx
 from pytmx.util_pygame import load_pygame
 import sys
 import os
 
-os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
-pygame.init()
-screen = pygame.display.set_mode((1280, 640))
-pygame.display.set_caption('Kismet')
+def load_image(name):
+    image = pg.image.load(name)
+    return image
 
 class TiledMap:
     def __init__(self, filename):
@@ -26,28 +25,61 @@ class TiledMap:
                         surface.blit(tile, (x*self.tm.tilewidth,y*self.tm.tileheight))
 
     def make_map(self):
-        screen = pygame.display.set_mode((self.width, self.height))
+        screen = pg.display.set_mode((self.width, self.height))
         self.render(screen)
+
+class Fursa_sprite(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.idle()
+
+    def idle(self):
+        self.directory = "C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Idle"
+        os.chdir(self.directory)
+        self.images = []
+        for file in os.listdir(self.directory):
+            self.images.append(load_image(file))
+
+    def update(self):
+        self.image = self.images[0]
+        self.rect = self.image.get_rect()
+        self.index = 1
 
 class Level_Start:
     def __init__(self):
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
-        pygame.mixer.music.load('301 - Good Memories.mp3')
-        pygame.mixer.music.play(loops = -1, start = 0.0)
+        self.music = pg.mixer.music.load('301 - Good Memories.mp3')
+        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
 
 # Game Start
-Level_Starts = Level_Start()
-while True:
+def main():
+    pg.init()
+    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
+    screen = pg.display.set_mode((1280, 640))
+    pg.display.set_caption('Kismet')
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()
+    Level_Starts = Level_Start()
+    Fursa = Fursa_sprite()
 
-        if event.type == pygame.KEYDOWN:
-            user_input = (chr(event.key))
-            if user_input == 'c':
+    Sprites_list = pg.sprite.Group()
+    Sprites_list.add(Fursa)
+
+
+    while True:
+
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
                 sys.exit()
 
-    pygame.display.flip()
+            if event.type == pg.KEYDOWN:
+                user_input = (chr(event.key))
+                if user_input == 'c':
+                    sys.exit()
+        Sprites_list.update()
+        Sprites_list.draw(screen)
+        pg.display.flip()
+
+if __name__ == '__main__':
+    main()
