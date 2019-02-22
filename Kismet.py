@@ -37,6 +37,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.current_images = self.idle_images
         self.image = self.idle_images[0]
         self.rect = self.image.get_rect()
+        self.key_pressed = False
         # self.change_state = True
 
     def upload_frames(self):
@@ -59,7 +60,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         return False
 
     def change_state(self):
-        if pg.key.get_focused():
+        if self.key_pressed:
             self.current_images = self.walk_images
         else:
             self.current_images = self.idle_images
@@ -67,8 +68,7 @@ class Fursa_sprite(pg.sprite.Sprite):
     def handle_keys(self):
         pg.event.pump()
         keys = pg.key.get_pressed()
-        print(keys)
-        dist = 3
+        dist = 6
         if keys[pg.K_UP]:
             self.rect.y -= dist
         if keys[pg.K_RIGHT]:
@@ -78,11 +78,10 @@ class Fursa_sprite(pg.sprite.Sprite):
         if keys[pg.K_LEFT]:
             self.rect.x -= dist
 
+
     def update(self):
         self.handle_keys()
         self.change_state()
-        print(pg.key.get_focused())
-
         self.image = self.current_images[self.frame_index]
         self.frame_index += 1
         if self.frame_index == self.frame_index_max:
@@ -116,6 +115,10 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
+            if event.type == pg.KEYDOWN:
+                Fursa.key_pressed = True
+            else:
+                Fursa.key_pressed = False
 
         # Screen Background Refresh
         screen.blit(Starting_Area.map.surface, (0,0))
