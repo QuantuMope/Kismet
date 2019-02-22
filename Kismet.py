@@ -4,10 +4,12 @@ from pytmx.util_pygame import load_pygame
 import sys
 import os
 
+# Quick function to load images.
 def load_image(name):
     image = pg.image.load(name)
     return image
 
+# TiledMap class to render Tiled maps to surfaces.
 class TiledMap:
     def __init__(self, filename):
         tm = load_pygame(filename)
@@ -29,6 +31,7 @@ class TiledMap:
         self.render(self.surface)
         return self.surface
 
+# Fursa sprite. The main character of the game.
 class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -40,6 +43,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.key_pressed = False
         # self.change_state = True
 
+    # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     def upload_frames(self):
         self.idle_images = []
         self.walk_images = []
@@ -53,18 +57,14 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.all_images[i].append(pg.transform.scale(load_image(file), (156, 156)))
         self.frame_index_max = 12
 
-    def idle(self):
-        return True
-
-    def walk(self):
-        return False
-
+    # Function that changes Fursa's animation depending on the action performed. Called in update().
     def change_state(self):
         if self.key_pressed:
             self.current_images = self.walk_images
         else:
             self.current_images = self.idle_images
 
+    # Function that handles Fursa's key inputs. Called in update().
     def handle_keys(self):
         pg.event.pump()
         keys = pg.key.get_pressed()
@@ -78,7 +78,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         if keys[pg.K_LEFT]:
             self.rect.x -= dist
 
-
+    # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     def update(self):
         self.handle_keys()
         self.change_state()
@@ -87,6 +87,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         if self.frame_index == self.frame_index_max:
             self.frame_index = 0
 
+# Starting area. Stores map and music data.
 class Level_Start:
     def __init__(self):
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
@@ -97,13 +98,14 @@ class Level_Start:
 
 # Game Loop
 def main():
+    # Game parameters.
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
     screen = pg.display.set_mode((1280, 640))
-    Sprite_surface = pg.Surface((1280, 640))
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
 
+    # Declare objects.
     Starting_Area = Level_Start()
     Fursa = Fursa_sprite()
     Sprites_list = pg.sprite.Group()
@@ -122,10 +124,13 @@ def main():
 
         # Screen Background Refresh
         screen.blit(Starting_Area.map.surface, (0,0))
+
+        # Sprites update.
         Sprites_list.update()
         Sprites_list.draw(screen)
 
-        clock.tick(10)
+        clock.tick(10) # Framerate.
+        
         pg.display.flip()
 
 if __name__ == '__main__':
