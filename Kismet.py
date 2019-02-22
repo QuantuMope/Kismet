@@ -20,17 +20,18 @@ class TiledMap:
     # Renders two surfaces. back_surface is the surface that sprites appear in front of. top_surface vice versa.
     def render(self, back_surface, top_surface):
         ti = self.tm.get_tile_image_by_gid
-        self.last_layer = 2
+        self.last_layer = 0
         self.layer_counter = 0
-        # for layer in self.tm.visible_layers:
-        #     self.last_layer += 1
+        # Determine last layer.
         for layer in self.tm.visible_layers:
+            self.last_layer += 1
+        for layer in self.tm.visible_layers:
+            self.layer_counter += 1
             if isinstance(layer, pytmx.TiledTileLayer):
                 for x, y, gid in layer:
                     tile = ti(gid)
-                    self.layer_counter += 1
                     if tile:
-                        if self.layer_counter <= self.last_layer:
+                        if self.layer_counter != self.last_layer:
                             back_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
                         else:
                             top_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
@@ -38,7 +39,7 @@ class TiledMap:
 
     def make_map(self):
         self.back_surface = pg.Surface((self.width, self.height))
-        self.front_surface = pg.Surface((self.width, self.height))
+        self.front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32)
         self.render(self.back_surface, self.front_surface)
         return self.back_surface, self.front_surface
 
@@ -135,12 +136,12 @@ def main():
 
         # Screen Background Refresh
         screen.blit(Starting_Area.map.back_surface, (0,0))
-        #screen.blit(Starting_Area.map.front_surface, (0,0))
 
         # Sprites update.
-        #Sprites_list.update()
-        #Sprites_list.draw(screen)
+        Sprites_list.update()
+        Sprites_list.draw(screen)
 
+        screen.blit(Starting_Area.map.front_surface, (0,0))
 
         clock.tick(10) # Framerate.
 
