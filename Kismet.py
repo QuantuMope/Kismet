@@ -17,19 +17,30 @@ class TiledMap:
         self.height = tm.height * tm.tileheight
         self.tm = tm
 
-    def render(self, surface):
+    # Renders two surfaces. back_surface is the surface that sprites appear in front of. top_surface vice versa.
+    def render(self, back_surface, top_surface):
         ti = self.tm.get_tile_image_by_gid
+        self.last_layer = 2
+        self.layer_counter = 0
+        # for layer in self.tm.visible_layers:
+        #     self.last_layer += 1
         for layer in self.tm.visible_layers:
             if isinstance(layer, pytmx.TiledTileLayer):
                 for x, y, gid in layer:
                     tile = ti(gid)
+                    self.layer_counter += 1
                     if tile:
-                        surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
+                        if self.layer_counter <= self.last_layer:
+                            back_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
+                        else:
+                            top_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
+
 
     def make_map(self):
-        self.surface = pg.Surface((self.width, self.height))
-        self.render(self.surface)
-        return self.surface
+        self.back_surface = pg.Surface((self.width, self.height))
+        self.front_surface = pg.Surface((self.width, self.height))
+        self.render(self.back_surface, self.front_surface)
+        return self.back_surface, self.front_surface
 
 # Fursa sprite. The main character of the game.
 class Fursa_sprite(pg.sprite.Sprite):
@@ -123,14 +134,16 @@ def main():
                 Fursa.key_pressed = False
 
         # Screen Background Refresh
-        screen.blit(Starting_Area.map.surface, (0,0))
+        screen.blit(Starting_Area.map.back_surface, (0,0))
+        #screen.blit(Starting_Area.map.front_surface, (0,0))
 
         # Sprites update.
-        Sprites_list.update()
-        Sprites_list.draw(screen)
+        #Sprites_list.update()
+        #Sprites_list.draw(screen)
+
 
         clock.tick(10) # Framerate.
-        
+
         pg.display.flip()
 
 if __name__ == '__main__':
