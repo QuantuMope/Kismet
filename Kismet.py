@@ -23,7 +23,7 @@ class TiledMap:
         self.last_layer = 0
         self.layer_counter = 0
         # Determine last layer.
-        for layer in self.tm.visible_layers:
+        for layer in self.tm.visible_tile_layers:
             self.last_layer += 1
         for layer in self.tm.visible_layers:
             self.layer_counter += 1
@@ -35,12 +35,31 @@ class TiledMap:
                             back_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
                         else:
                             top_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
+            elif isinstance(layer, pytmx.TiledObjectGroup):
+                pass
+
+    def blocks(self):
+        self.blockers = []
+        tl = self.tm.get_object_by_name('blocker')
+        print(tl)
+        #for tile_object in self.tm.get_object_by_name('blocker'):
+
+            # properties = tile_object.__dict__
+            # if properties['name'] == 'blocker':
+            #     x = properties['x']
+            #     y = properties['y']
+            #     width = properties['width']
+            #     height = properties['height']
+            #     new_rect = pg.Rect(x, y, width, height)
+            #     self.blockers.append(new_rect)
+            #     print(self.blockers)
 
 
     def make_map(self):
         self.back_surface = pg.Surface((self.width, self.height))
         self.front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32)
         self.render(self.back_surface, self.front_surface)
+
         return self.back_surface, self.front_surface
 
 # Fursa sprite. The main character of the game.
