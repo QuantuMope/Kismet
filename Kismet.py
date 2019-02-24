@@ -57,11 +57,16 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.upload_frames()
         self.current_images = self.idle_images
         self.image = self.idle_images[0]
-        self.rect = pg.Rect((0, 400), (156, 124))
+        self.rect = pg.Rect((0, 0), (156, 124)) # Spawn point and collision size.
         self.key_pressed = False
-        self.dt = 0
-        self.fall_rate = 0
-        self.jump_rate = 50
+        self.gravity_dt = 0
+        self.frame_dt = 0
+        self.jump_dt = 0
+        self.fall_rate = 1
+        self.jump_rate = 100
+        self.jump_index = 0
+        self.dist = 2
+        self.jump = False
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     def upload_frames(self):
@@ -86,23 +91,44 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that handles Fursa's key inputs. Called in update().
     def handle_keys(self):
-        pg.event.pump()
-        keys = pg.key.get_pressed()
-        dist = 2
-        if keys[pg.K_UP]:
-            self.rect.y -= dist
-        if keys[pg.K_RIGHT]:
-            self.rect.x += dist
-        if keys[pg.K_DOWN]:
-            self.rect.y += dist
-        if keys[pg.K_LEFT]:
-            self.rect.x -= dist
 
-        # Jumping animation.
-        if keys[pg.K_SPACE]:
-            if (self.time - self.dt) >= 10:
-                for i in reversed(range(self.jump_rate)):
-                    self.rect.y -= 1
+        # Monitor held down keys. (movement)
+        keys = pg.key.get_pressed()
+        if keys[pg.K_UP]:
+            self.rect.y -= self.dist
+        if keys[pg.K_RIGHT]:
+            self.rect.x += self.dist
+        if keys[pg.K_DOWN]:
+            self.rect.y += self.dist
+        if keys[pg.K_LEFT]:
+            self.rect.x -= self.dist
+
+        # Pygame event loop.
+        for event in pg.event.get():
+
+            # Allow to quit game.
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+
+            # Monitor single key presses. (actions)
+            if event.type == pg.KEYDOWN:
+                self.key_pressed = True
+
+                # Jumping animation.
+                if event.key == pg.K_SPACE:
+                    self.jump = True # Jump starts.
+                    self.jump_rate = [100 * (1 / e) for e in range(1, 10)]
+                    while self.jump_index < 10:
+                        if (self.time - self.jump_dt) >= 100:
+                            self.rect.y -= self.jump_rate[self.jump_index]
+                            self.jump_dt = self.time
+                            self.jump_index += 1
+                    self.jump = False # Jump finishes.
+
+
+            else:
+                self.key_pressed = False
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     def update(self, blockers):
@@ -111,9 +137,9 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.handle_keys()
         self.change_state()
 
-        # Cycle through frames every 0.5 seconds.
-        if (self.time - self.dt) >= 250:
-            self.dt = self.time
+        # Cycle through frames every 0.25 seconds.
+        if (self.time - self.frame_dt) >= 250:
+            self.frame_dt = self.time
             self.image = self.current_images[self.frame_index]
             self.frame_index += 1
             if self.frame_index == self.frame_index_max:
@@ -124,15 +150,14 @@ class Fursa_sprite(pg.sprite.Sprite):
             if self.rect.colliderect(block):
                 pass
             else:
-                if (self.time - self.dt) >= 10:
-                    self.dt = self.time
-                    self.fall_rate += 1
-                    for i in range(self.fall_rate):
+                if (self.time - self.gravity_dt) >= 20 and self.jump is False:
+                    self.gravity_dt = self.time
+                    self.fall_rate *= 1.1 # Acceleration rate.
+                    for i in range(int(self.fall_rate)):
                         self.rect.y += 1
                         if self.rect.colliderect(block):
-                            self.fall_rate = 0
+                            self.fall_rate = 1
                             break
-
 
 # Starting area. Stores map and music data.
 class Level_Start:
@@ -145,6 +170,7 @@ class Level_Start:
 
 # Game Loop
 def main():
+
     # Game parameters.
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
@@ -160,14 +186,6 @@ def main():
 
 
     while True:
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
-            if event.type == pg.KEYDOWN:
-                Fursa.key_pressed = True
-            else:
-                Fursa.key_pressed = False
 
         # Screen background back surface refresh.
         screen.blit(Starting_Area.map.back_surface, (0,0))
@@ -179,7 +197,7 @@ def main():
         # Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
-        clock.tick(60) # Framerate.
+        clock.tick(120) # Framerate.
 
         pg.display.flip()
 
