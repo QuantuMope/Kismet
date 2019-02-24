@@ -23,11 +23,12 @@ class TiledMap:
         ti = self.tm.get_tile_image_by_gid
         self.last_layer = 0
         self.layer_counter = 0
-        # Determine last layer.
+        # Determine last tile layer.
         for layer in self.tm.visible_tile_layers:
             self.last_layer += 1
         for layer in self.tm.visible_layers:
             self.layer_counter += 1
+
             if isinstance(layer, pytmx.TiledTileLayer):
                 for x, y, gid in layer:
                     tile = ti(gid)
@@ -36,34 +37,16 @@ class TiledMap:
                             back_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
                         else:
                             top_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
+
             elif isinstance(layer, pytmx.TiledObjectGroup):
-                self.object_layer = layer
                 for object in layer:
                     new_rect = pg.Rect(object.x, object.y, object.width, object.height)
                     self.blockers.append(new_rect)
-
-    def blocks(self):
-        self.blockers = []
-        tl = self.tm.get_object_by_name('blocker')
-        print(tl)
-        #for tile_object in self.tm.get_object_by_name('blocker'):
-
-            # properties = tile_object.__dict__
-            # if properties['name'] == 'blocker':
-            #     x = properties['x']
-            #     y = properties['y']
-            #     width = properties['width']
-            #     height = properties['height']
-            #     new_rect = pg.Rect(x, y, width, height)
-            #     self.blockers.append(new_rect)
-            #     print(self.blockers)
-
 
     def make_map(self):
         self.back_surface = pg.Surface((self.width, self.height))
         self.front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32)
         self.render(self.back_surface, self.front_surface)
-        print(self.blockers)
         return self.back_surface, self.front_surface
 
 # Fursa sprite. The main character of the game.
@@ -75,8 +58,10 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.current_images = self.idle_images
         self.image = self.idle_images[0]
         self.rect = self.image.get_rect()
+        print(self.rect)
         self.key_pressed = False
-        # self.change_state = True
+        self.dt = 0
+        self.fall_rate = 0
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     def upload_frames(self):
@@ -114,13 +99,24 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.rect.x -= dist
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
-    def update(self):
+    def update(self, blockers):
         self.handle_keys()
         self.change_state()
         self.image = self.current_images[self.frame_index]
         self.frame_index += 1
         if self.frame_index == self.frame_index_max:
             self.frame_index = 0
+
+        # Gravity Emulation
+        self.time = pg.time.get_ticks()
+        for block in blockers:
+            if self.rect.colliderect(block):
+                pass
+            else:
+                if (self.time - self.dt) >= 100:
+                    self.dt = self.time
+                    self.rect.y += self.fall_rate
+                    self.fall_rate += 1
 
 # Starting area. Stores map and music data.
 class Level_Start:
@@ -161,7 +157,7 @@ def main():
         screen.blit(Starting_Area.map.back_surface, (0,0))
 
         # Sprites update.
-        Sprites_list.update()
+        Sprites_list.update(Starting_Area.map.blockers)
         Sprites_list.draw(screen)
 
         screen.blit(Starting_Area.map.front_surface, (0,0))
