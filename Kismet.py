@@ -57,11 +57,11 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.upload_frames()
         self.current_images = self.idle_images
         self.image = self.idle_images[0]
-        self.rect = self.image.get_rect()
-        print(self.rect)
+        self.rect = pg.Rect((0, 400), (156, 124))
         self.key_pressed = False
         self.dt = 0
         self.fall_rate = 0
+        self.jump_rate = 50
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     def upload_frames(self):
@@ -88,7 +88,7 @@ class Fursa_sprite(pg.sprite.Sprite):
     def handle_keys(self):
         pg.event.pump()
         keys = pg.key.get_pressed()
-        dist = 6
+        dist = 2
         if keys[pg.K_UP]:
             self.rect.y -= dist
         if keys[pg.K_RIGHT]:
@@ -98,25 +98,41 @@ class Fursa_sprite(pg.sprite.Sprite):
         if keys[pg.K_LEFT]:
             self.rect.x -= dist
 
+        # Jumping animation.
+        if keys[pg.K_SPACE]:
+            if (self.time - self.dt) >= 10:
+                for i in reversed(range(self.jump_rate)):
+                    self.rect.y -= 1
+
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     def update(self, blockers):
+
+        self.time = pg.time.get_ticks()
         self.handle_keys()
         self.change_state()
-        self.image = self.current_images[self.frame_index]
-        self.frame_index += 1
-        if self.frame_index == self.frame_index_max:
-            self.frame_index = 0
+
+        # Cycle through frames every 0.5 seconds.
+        if (self.time - self.dt) >= 250:
+            self.dt = self.time
+            self.image = self.current_images[self.frame_index]
+            self.frame_index += 1
+            if self.frame_index == self.frame_index_max:
+                self.frame_index = 0
 
         # Gravity Emulation
-        self.time = pg.time.get_ticks()
         for block in blockers:
             if self.rect.colliderect(block):
                 pass
             else:
-                if (self.time - self.dt) >= 100:
+                if (self.time - self.dt) >= 10:
                     self.dt = self.time
-                    self.rect.y += self.fall_rate
                     self.fall_rate += 1
+                    for i in range(self.fall_rate):
+                        self.rect.y += 1
+                        if self.rect.colliderect(block):
+                            self.fall_rate = 0
+                            break
+
 
 # Starting area. Stores map and music data.
 class Level_Start:
@@ -153,16 +169,17 @@ def main():
             else:
                 Fursa.key_pressed = False
 
-        # Screen Background Refresh
+        # Screen background back surface refresh.
         screen.blit(Starting_Area.map.back_surface, (0,0))
 
         # Sprites update.
         Sprites_list.update(Starting_Area.map.blockers)
         Sprites_list.draw(screen)
 
+        # Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
-        clock.tick(10) # Framerate.
+        clock.tick(60) # Framerate.
 
         pg.display.flip()
 
