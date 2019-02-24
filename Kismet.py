@@ -57,6 +57,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.upload_frames()
         self.current_images = self.idle_images
         self.image = self.idle_images[0]
+        self.state = 0
         self.rect = pg.Rect((0, 0), (156, 124)) # Spawn point and collision size.
         self.key_pressed = False
         self.gravity_dt = 0
@@ -65,29 +66,42 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.fall_rate = 1
         self.jump_rate = 20
         self.jump_index = 0
-        self.dist = 2
+        self.dist = 1
         self.jump = False
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
+        self.jump_noise = pg.mixer.Sound("jump_02.wav")
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     def upload_frames(self):
         self.idle_images = []
         self.walk_images = []
-        self.all_images = [self.idle_images, self.walk_images]
-        self.directories = ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Idle"   # Idle Animation
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Walk"]  # Walking Animation
+        self.run_images = []
+        self.attack_images = []
+        self.shield_images = []
+        self.death_images = []
+        self.all_images = [self.idle_images, self.walk_images, self.run_images, self.attack_images, self.shield_images, self.death_images]
+
+        self.directories = ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Idle"       # Idle animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Walk"       # Walking animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Run"        # Run animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_01"  # Attack animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_02"  # Shield animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Death"]     # Death animation.
 
         for i, directory in enumerate(self.directories):
             os.chdir(directory)
             for file in os.listdir(directory):
                 self.all_images[i].append(pg.transform.scale(load_image(file), (156, 156)))
-        self.frame_index_max = 12
+        self.frame_maxes = [len(images) for images in self.all_images]
 
     # Function that changes Fursa's animation depending on the action performed. Called in update().
     def change_state(self):
         if self.key_pressed:
             self.current_images = self.walk_images
+            self.state = 1
         else:
             self.current_images = self.idle_images
+            self.state = 0
 
     # Function that handles Fursa's key inputs. Called in update().
     def handle_keys(self):
@@ -117,6 +131,7 @@ class Fursa_sprite(pg.sprite.Sprite):
 
                 # Jump input.
                 if event.key == pg.K_SPACE:
+                    self.jump_noise.play()
                     self.jump = True    # ----------------> Jump starts.
 
             else:
@@ -128,7 +143,6 @@ class Fursa_sprite(pg.sprite.Sprite):
             if (self.time - self.jump_dt) >= 40:
                 self.jump_dt = self.time
                 self.jump_rate *= 0.8 # Jump deceleration.
-                print(self.jump_rate)
                 self.jump_index += 1
                 for i in range(int(self.jump_rate)):
                     self.rect.y -= 1
@@ -150,7 +164,7 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.frame_dt = self.time
             self.image = self.current_images[self.frame_index]
             self.frame_index += 1
-            if self.frame_index == self.frame_index_max:
+            if self.frame_index == self.frame_maxes[self.state]:
                 self.frame_index = 0
 
         # Gravity Emulation
@@ -173,8 +187,8 @@ class Level_Start:
     def __init__(self):
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
-        #self.music = pg.mixer.music.load('301 - Good Memories.mp3')
-        #pg.mixer.music.play(loops = -1, start = 0.0)
+        self.music = pg.mixer.music.load('301 - Good Memories.mp3')
+        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
 
 # Game Loop
