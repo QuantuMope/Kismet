@@ -16,6 +16,7 @@ class TiledMap:
         self.width = tm.width * tm.tilewidth
         self.height = tm.height * tm.tileheight
         self.tm = tm
+        self.blockers = []
 
     # Renders two surfaces. back_surface is the surface that sprites appear in front of. top_surface vice versa.
     def render(self, back_surface, top_surface):
@@ -36,7 +37,10 @@ class TiledMap:
                         else:
                             top_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
             elif isinstance(layer, pytmx.TiledObjectGroup):
-                pass
+                self.object_layer = layer
+                for object in layer:
+                    new_rect = pg.Rect(object.x, object.y, object.width, object.height)
+                    self.blockers.append(new_rect)
 
     def blocks(self):
         self.blockers = []
@@ -59,7 +63,7 @@ class TiledMap:
         self.back_surface = pg.Surface((self.width, self.height))
         self.front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32)
         self.render(self.back_surface, self.front_surface)
-
+        print(self.blockers)
         return self.back_surface, self.front_surface
 
 # Fursa sprite. The main character of the game.
@@ -123,8 +127,8 @@ class Level_Start:
     def __init__(self):
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
-        self.music = pg.mixer.music.load('301 - Good Memories.mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
+        #self.music = pg.mixer.music.load('301 - Good Memories.mp3')
+        #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
 
 # Game Loop
