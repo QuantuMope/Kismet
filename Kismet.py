@@ -63,7 +63,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.frame_dt = 0
         self.jump_dt = 0
         self.fall_rate = 1
-        self.jump_rate = 100
+        self.jump_rate = 20
         self.jump_index = 0
         self.dist = 2
         self.jump = False
@@ -115,20 +115,28 @@ class Fursa_sprite(pg.sprite.Sprite):
             if event.type == pg.KEYDOWN:
                 self.key_pressed = True
 
-                # Jumping animation.
+                # Jump input.
                 if event.key == pg.K_SPACE:
-                    self.jump = True # Jump starts.
-                    self.jump_rate = [100 * (1 / e) for e in range(1, 10)]
-                    while self.jump_index < 10:
-                        if (self.time - self.jump_dt) >= 100:
-                            self.rect.y -= self.jump_rate[self.jump_index]
-                            self.jump_dt = self.time
-                            self.jump_index += 1
-                    self.jump = False # Jump finishes.
-
+                    self.jump = True    # ----------------> Jump starts.
 
             else:
                 self.key_pressed = False
+
+        # Jumping animation triggered by space key press.
+        # Jump code is placed outside event loop so that the animation can carry out.
+        if self.jump is True:
+            if (self.time - self.jump_dt) >= 40:
+                self.jump_dt = self.time
+                self.jump_rate *= 0.8 # Jump deceleration.
+                print(self.jump_rate)
+                self.jump_index += 1
+                for i in range(int(self.jump_rate)):
+                    self.rect.y -= 1
+                    if self.jump_index == 5:
+                        self.jump = False   # ----------------> Jump finishes.
+                        self.jump_rate = 20
+                        self.jump_index = 0
+                        break
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     def update(self, blockers):
@@ -150,6 +158,7 @@ class Fursa_sprite(pg.sprite.Sprite):
             if self.rect.colliderect(block):
                 pass
             else:
+                # Gravity is disabled when a jump animation is in progress.
                 if (self.time - self.gravity_dt) >= 20 and self.jump is False:
                     self.gravity_dt = self.time
                     self.fall_rate *= 1.1 # Acceleration rate.
