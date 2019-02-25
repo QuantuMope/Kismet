@@ -99,7 +99,10 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that changes Fursa's animation depending on the action performed. Called in update().
     def change_state(self):
-        if self.key_pressed:
+        if self.key_pressed and self.shift:
+            self.current_images = self.run_images
+            self.state = 2
+        elif self.key_pressed:
             self.current_images = self.walk_images
             self.state = 1
         else:
@@ -115,10 +118,18 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.rect.y -= self.dist
         if keys[pg.K_RIGHT]:
             self.rect.x += self.dist
+            self.key_pressed = True
         if keys[pg.K_DOWN]:
             self.rect.y += self.dist
         if keys[pg.K_LEFT]:
             self.rect.x -= self.dist
+            self.key_pressed = True
+        if keys[pg.K_LSHIFT]:
+            self.shift = True
+            self.dist = 2
+        else:
+            self.shift = False
+            self.dist = 1
 
         # Pygame event loop.
         for event in pg.event.get():
@@ -131,6 +142,7 @@ class Fursa_sprite(pg.sprite.Sprite):
             # Monitor single key presses. (actions)
             if event.type == pg.KEYDOWN:
                 self.key_pressed = True
+                self.frame_index = 0 # Frame reset when key is pressed.
 
                 if event.key == pg.K_RIGHT:
                     self.facing_right = True
@@ -142,6 +154,10 @@ class Fursa_sprite(pg.sprite.Sprite):
                 if event.key == pg.K_SPACE:
                     self.jump_noise.play()
                     self.jump = True    # ----------------> Jump starts.
+
+            elif event.type == pg.KEYUP:
+                self.frame_index = 0 # Frame reset when key is no longer held down.
+                self.key_pressed = False
 
             else:
                 self.key_pressed = False
@@ -172,6 +188,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Cycle through frames every 0.25 seconds.
         if (self.time - self.frame_dt) >= 250 or self.facing_right != self.frame_override:
             self.frame_dt = self.time
+            print(self.frame_index)
             if self.facing_right:
                 self.image = self.current_images[self.frame_index]
                 self.frame_index += 1
@@ -180,7 +197,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
                 self.frame_index += 1
                 self.frame_override = False
-            if self.frame_index == self.frame_maxes[self.state]:
+            if self.frame_index == self.frame_maxes[self.state]: #or len(self.current_images) != (self.frame_maxes[self.state])
                 self.frame_index = 0
 
         # Gravity Emulation
@@ -239,7 +256,7 @@ def main():
         # Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
-        clock.tick(120) # Framerate.
+        clock.tick(90) # Framerate.
 
         pg.display.flip()
 
