@@ -3,6 +3,7 @@ import pytmx
 from pytmx.util_pygame import load_pygame
 import sys
 import os
+from time import sleep
 
 # Quick function to load images.
 def load_image(name):
@@ -58,6 +59,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.current_images = self.idle_images
         self.image = self.idle_images[0]
         self.state = 0
+        self.facing_right = True
+        self.frame_override = True
         self.rect = pg.Rect((0, 0), (156, 124)) # Spawn point and collision size.
         self.key_pressed = False
         self.gravity_dt = 0
@@ -129,6 +132,12 @@ class Fursa_sprite(pg.sprite.Sprite):
             if event.type == pg.KEYDOWN:
                 self.key_pressed = True
 
+                if event.key == pg.K_RIGHT:
+                    self.facing_right = True
+
+                if event.key == pg.K_LEFT:
+                    self.facing_right = False
+
                 # Jump input.
                 if event.key == pg.K_SPACE:
                     self.jump_noise.play()
@@ -139,8 +148,9 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         # Jumping animation triggered by space key press.
         # Jump code is placed outside event loop so that the animation can carry out.
+        # Decelerates every 60 ms.
         if self.jump is True:
-            if (self.time - self.jump_dt) >= 40:
+            if (self.time - self.jump_dt) >= 60:
                 self.jump_dt = self.time
                 self.jump_rate *= 0.8 # Jump deceleration.
                 self.jump_index += 1
@@ -160,24 +170,32 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.change_state()
 
         # Cycle through frames every 0.25 seconds.
-        if (self.time - self.frame_dt) >= 250:
+        if (self.time - self.frame_dt) >= 250 or self.facing_right != self.frame_override:
             self.frame_dt = self.time
-            self.image = self.current_images[self.frame_index]
-            self.frame_index += 1
+            if self.facing_right:
+                self.image = self.current_images[self.frame_index]
+                self.frame_index += 1
+                self.frame_override = True
+            else:
+                self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
+                self.frame_index += 1
+                self.frame_override = False
             if self.frame_index == self.frame_maxes[self.state]:
                 self.frame_index = 0
 
         # Gravity Emulation
         for block in blockers:
+            # Checks to see if Fursa is in contact with the ground.
             if self.rect.colliderect(block):
                 pass
             else:
-                # Gravity is disabled when a jump animation is in progress.
+                # Gravity is disabled when a jump animation is in progress. Accelerates every 20 ms.
                 if (self.time - self.gravity_dt) >= 20 and self.jump is False:
                     self.gravity_dt = self.time
                     self.fall_rate *= 1.1 # Acceleration rate.
                     for i in range(int(self.fall_rate)):
                         self.rect.y += 1
+                        # Halts gravity when Fursa lands on a block.
                         if self.rect.colliderect(block):
                             self.fall_rate = 1
                             break
@@ -195,6 +213,7 @@ class Level_Start:
 def main():
 
     # Game parameters.
+    pg.mixer.pre_init(44100, -16, 2, 512)
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
     screen = pg.display.set_mode((1280, 640))
