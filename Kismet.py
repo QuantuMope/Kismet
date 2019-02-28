@@ -73,6 +73,9 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.jump = False
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
+        self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
+        self.attack = False
+        self.frame_speed = 200
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     def upload_frames(self):
@@ -99,37 +102,47 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that changes Fursa's animation depending on the action performed. Called in update().
     def change_state(self):
-        if self.key_pressed and self.shift:
+        if self.attack:
+            self.current_images = self.attack_images
+            self.state = 3
+            self.frame_speed = 75
+        elif self.key_pressed and self.shift:
             self.current_images = self.run_images
             self.state = 2
+            self.frame_speed = 100
         elif self.key_pressed:
             self.current_images = self.walk_images
             self.state = 1
+            self.frame_speed = 150
         else:
             self.current_images = self.idle_images
             self.state = 0
+            self.frame_speed = 200
 
     # Function that handles Fursa's key inputs. Called in update().
     def handle_keys(self):
 
         # Monitor held down keys. (movement)
         keys = pg.key.get_pressed()
-        if keys[pg.K_UP]:
+        if keys[pg.K_w]:
             self.rect.y -= self.dist
-        if keys[pg.K_RIGHT]:
+        if keys[pg.K_d]:
             self.rect.x += self.dist
             self.key_pressed = True
-        if keys[pg.K_DOWN]:
+        if keys[pg.K_s]:
             self.rect.y += self.dist
-        if keys[pg.K_LEFT]:
+        if keys[pg.K_a]:
             self.rect.x -= self.dist
             self.key_pressed = True
+        # Running changes speed by holding down shift.
         if keys[pg.K_LSHIFT]:
             self.shift = True
             self.dist = 2
         else:
             self.shift = False
             self.dist = 1
+
+
 
         # Pygame event loop.
         for event in pg.event.get():
@@ -144,18 +157,23 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.key_pressed = True
                 self.frame_index = 0 # Frame reset when key is pressed.
 
-                if event.key == pg.K_RIGHT:
+                if event.key == pg.K_d:
                     self.facing_right = True
 
-                if event.key == pg.K_LEFT:
+                if event.key == pg.K_a:
                     self.facing_right = False
+
+                if event.key == pg.K_r:
+                    self.attack_noise.play()
+                    self.attack = True
+
 
                 # Jump input.
                 if event.key == pg.K_SPACE:
                     self.jump_noise.play()
                     self.jump = True    # ----------------> Jump starts.
 
-            elif event.type == pg.KEYUP:
+            elif event.type == pg.KEYUP and self.attack == False:
                 self.frame_index = 0 # Frame reset when key is no longer held down.
                 self.key_pressed = False
 
@@ -185,10 +203,9 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.handle_keys()
         self.change_state()
 
-        # Cycle through frames every 0.25 seconds.
-        if (self.time - self.frame_dt) >= 250 or self.facing_right != self.frame_override:
+        # Cycle through frames every 0.20 seconds.
+        if (self.time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = self.time
-            print(self.frame_index)
             if self.facing_right:
                 self.image = self.current_images[self.frame_index]
                 self.frame_index += 1
@@ -197,8 +214,9 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
                 self.frame_index += 1
                 self.frame_override = False
-            if self.frame_index == self.frame_maxes[self.state]: #or len(self.current_images) != (self.frame_maxes[self.state])
+            if self.frame_index == self.frame_maxes[self.state]:
                 self.frame_index = 0
+                self.attack = False
 
         # Gravity Emulation
         for block in blockers:
@@ -223,7 +241,7 @@ class Level_Start:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
         self.music = pg.mixer.music.load('301 - Good Memories.mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
+        #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
 
 # Game Loop
