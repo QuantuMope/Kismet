@@ -84,6 +84,7 @@ class TiledMap:
         self.render(self.back_surface, self.front_surface)
         return self.back_surface, self.front_surface
 
+# ----------------------------------------------------PLAYER-------------------------------------------------------------------
 # Fursa sprite. The main character of the game.
 class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
@@ -95,7 +96,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((0, 0), (156, 124)) # Spawn point and collision size.
+        self.rect = pg.Rect((0, 0), (128, 102)) # Spawn point and collision size.
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -140,7 +141,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         for i, directory in enumerate(directories):
             os.chdir(directory)
             for file in os.listdir(directory):
-                self.all_images[i].append(pg.transform.scale(load_image(file), (156, 156)))
+                self.all_images[i].append(pg.transform.scale(load_image(file), (128, 128)))
 
         # Create a list of number of frames for each animation.
         self.frame_maxes = [len(images) for images in self.all_images]
@@ -318,6 +319,38 @@ class Fursa_sprite(pg.sprite.Sprite):
                             self.fall_rate = 1
                             break
 
+# ----------------------------------------------------ENEMIES-------------------------------------------------------------------
+class skeleton(pg.sprite.Sprite):
+    def __init__(self, frames):
+        super().__init__()
+        self.frames = frames.skeleton_frames[0]
+        self.frame_max = len(frames.skeleton_frames[0])
+        self.image = self.frames[0]
+        self.rect = pg.Rect(400, 400, 96, 96)
+        self.i = 0
+
+    def update(self, blockers):
+        self.image = self.frames[self.i]
+        self.i += 1
+        if self.i == 18:
+            self.i = 0
+        self.blockers = blockers
+
+class enemy_frames():
+    def __init__(self):
+        self.skeleton_frames = [self.skeleton_frames()]
+
+
+    def skeleton_frames(self):
+        # Attack frame. Total of 18 frames.
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Enemies/Skeleton/Sprite Sheets")
+        coordinates = [(43 * i, 0, 43, 37) for i in range(0, 18)]
+        skeleton_attack_ss = spritesheet('Skeleton Attack.png')
+        skeleton_attack_separate = skeleton_attack_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        skeleton_images = [pg.transform.scale(skeleton_attack_separate[i], (96, 96)) for i in range(0, len(skeleton_attack_separate))]
+        return skeleton_images
+
+
 # Class simply containing projectile frames of various attacks.
 # Created to avoid having to load from the hard drive every time a projectile is created.
 class blast_frames():
@@ -326,9 +359,9 @@ class blast_frames():
         # Fursa's attack blast properly separated into frames into a list from a spritesheet.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
-        blast_image_spritesheet = spritesheet('EnergyBall.png')
-        blast_images_separate = blast_image_spritesheet.images_at(coordinates, colorkey = (0, 0, 0))
-        self.blast_images = [pg.transform.scale(blast_images_separate[i], (64, 64)) for i in range(0, len(blast_images_separate))]
+        blast_image_ss = spritesheet('EnergyBall.png')
+        blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        self.blast_images = [pg.transform.scale(blast_images_separate[i], (48, 48)) for i in range(0, len(blast_images_separate))]
 
 # Fursa's blast projectile sprite.
 class Fursa_blast(pg.sprite.Sprite):
@@ -348,13 +381,14 @@ class Fursa_blast(pg.sprite.Sprite):
             # Self.already_spawned is initially set to False. Once Fursa summons the blast it is set to True,
             # so that existing blasts aren't affected by additional attacks in the future.
             if self.already_spawned == False:
-                self.rect.x = Fursa.rect.x + 74
-                self.rect.y = Fursa.rect.y + 56
+                self.rect.x = Fursa.rect.x + 70
+                self.rect.y = Fursa.rect.y + 52
                 self.image = self.images[0]
                 self.spawn = True
                 self.already_spawned = True
 
                 # Creates another blast sprite and stores it in sprite group ready for Fursa.
+                sleep(0.05) # Waits 50 ms to allow frame index to change so two blasts are not spawned.
                 blast_particle = Fursa_blast(self.images)
                 particle_sprites.add(blast_particle)
 
@@ -399,6 +433,10 @@ def main():
     character_sprites = pg.sprite.Group()
     character_sprites.add(Fursa)
 
+    enemy_images = enemy_frames()
+    skeleton_01 = skeleton(enemy_images)
+    character_sprites.add(skeleton_01)
+
     # Declare particle sprites.
     blast_particle_frames = blast_frames()
     blast_images = blast_particle_frames.blast_images
@@ -414,13 +452,13 @@ def main():
         # Layer 1-------- Screen background back surface refresh.
         screen.blit(Starting_Area.map.back_surface, (0,0))
 
-        # Layer 2-------- Character sprites update.
-        character_sprites.update(Starting_Area.map.blockers)
-        character_sprites.draw(screen)
-
-        # Layer 3-------- Particle sprites update.
+        # Layer 2-------- Particle sprites update.
         particle_sprites.update(Fursa, particle_sprites)
         particle_sprites.draw(screen)
+
+        # Layer 3-------- Character sprites update.
+        character_sprites.update(Starting_Area.map.blockers)
+        character_sprites.draw(screen)
 
         # Layer 4-------- Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
