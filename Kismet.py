@@ -323,32 +323,47 @@ class Fursa_sprite(pg.sprite.Sprite):
 class skeleton(pg.sprite.Sprite):
     def __init__(self, frames):
         super().__init__()
-        self.frames = frames.skeleton_frames[0]
+        self.frames = frames.skeleton_frames
         self.frame_max = len(frames.skeleton_frames[0])
-        self.image = self.frames[0]
+        self.idle = self.frames[0]
+        self.image = self.idle[0]
         self.rect = pg.Rect(400, 400, 96, 96)
         self.i = 0
 
     def update(self, blockers):
-        self.image = self.frames[self.i]
+        self.image = self.idle[self.i]
         self.i += 1
-        if self.i == 18:
+        if self.i == self.frame_max:
             self.i = 0
         self.blockers = blockers
 
 class enemy_frames():
     def __init__(self):
-        self.skeleton_frames = [self.skeleton_frames()]
+        self.skeleton_frames = []
+        self.skeleton_frames_func()
 
+    def skeleton_frames_func(self):
+        directory = "C:/Users/Andrew/Desktop/Python_Projects/Kismet/Enemies/Skeleton/Sprite Sheets"
+        os.chdir(directory)
 
-    def skeleton_frames(self):
-        # Attack frame. Total of 18 frames.
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Enemies/Skeleton/Sprite Sheets")
-        coordinates = [(43 * i, 0, 43, 37) for i in range(0, 18)]
-        skeleton_attack_ss = spritesheet('Skeleton Attack.png')
-        skeleton_attack_separate = skeleton_attack_ss.images_at(coordinates, colorkey = (0, 0, 0))
-        skeleton_images = [pg.transform.scale(skeleton_attack_separate[i], (96, 96)) for i in range(0, len(skeleton_attack_separate))]
-        return skeleton_images
+        # Spritesheet coordinates.                                                               Indexes
+        coordinates = [
+                         [(24 * i, 0, 24, 32) for i in range(0, 11)]       # Idle. -----------------0
+                        ,[(22 * i, 0, 22, 33) for i in range(0, 13)]       # Walking----------------1
+                        ,[(22 * i, 0, 22, 32) for i in range(0, 4 )]       # React------------------2
+                        ,[(43 * i, 0, 43, 37) for i in range(0, 18)]       # Attacking--------------3
+                        ,[(30 * i, 0, 30, 32) for i in range(0, 8) ]       # Hit--------------------4
+                        ,[(33 * i, 0, 33, 32) for i in range(0, 15)]       # Death------------------5
+                      ]
+
+        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
+
+        spritesheets = [spritesheet(file) for file in os.listdir(directory)]
+        spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey = (0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
+
+        for i, ss_sep in enumerate(spritesheets_separate):
+            scaled_frames = [pg.transform.scale(ss_sep[e], sizes[i]) for e in range(0, len(ss_sep))]
+            self.skeleton_frames.append(scaled_frames)
 
 
 # Class simply containing projectile frames of various attacks.
