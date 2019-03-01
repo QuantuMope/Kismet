@@ -5,11 +5,17 @@ import sys
 import os
 from time import sleep
 
+""" For Fursa class, due to the length, separate functions within the class are
+    separated by teal dashed lines as shown below."""
+    #----------------------------------------------------
+
+
 # Quick function to load images.
 def load_image(name):
     image = pg.image.load(name).convert_alpha()
     return image
 
+# Spritesheet class to split sprite sheets into proper single frames.
 class spritesheet(object):
     def __init__(self, filename):
         self.sheet = pg.image.load(filename).convert()
@@ -38,7 +44,7 @@ class spritesheet(object):
                 for x in range(image_count)]
         return self.images_at(tups, colorkey)
 
-# TiledMap class to render Tiled maps to surfaces.
+# TiledMap class to properly render Tiled maps by layer to surfaces.
 class TiledMap:
     def __init__(self, filename):
         tm = load_pygame(filename)
@@ -83,7 +89,7 @@ class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.frame_index = 0
-        self.upload_frames()
+        self.upload_frames() # Uploads all frames. Function found below.
         self.current_images = self.all_images[0]
         self.image = self.current_images[0]
         self.state = 0
@@ -97,16 +103,20 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.fall_rate = 1
         self.jump_rate = 20
         self.jump_index = 0
-        self.dist = 1
+        self.speed = 1 # @pixel/frame. At approx 80 fps --> 80 pixel/sec
         self.jump = False
+        self.attack = False
+        self.frame_speed = 200
+
+        # Load sound effects.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
-        self.attack = False
-        self.frame_speed = 200
 
+#-------------------------------------------------------------------------------------------------------------------------------
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
+    # Created separately for organizational purposes.
     def upload_frames(self):
         idle_images = []
         walk_images = []
@@ -115,18 +125,18 @@ class Fursa_sprite(pg.sprite.Sprite):
         shield_images = []
         death_images = []
 
-        # States
+        # State IDs
         #-----------------------0------------1------------2------------3--------------4--------------5-----------#
         self.all_images = [idle_images, walk_images, run_images, attack_images, shield_images, death_images]
 
-        directories = ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Idle"       # Idle animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Walk"       # Walking animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Run"        # Run animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_01"  # Attack animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_02"  # Shield animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Death"]     # Death animation.
+        directories =      ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Idle"          # Idle animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Walk"          # Walking animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Run"           # Run animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_01"     # Attack animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_02"     # Shield animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Death"]        # Death animation.
 
-        # Create a list containing lists with all animation frames.
+        # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):
             os.chdir(directory)
             for file in os.listdir(directory):
@@ -135,8 +145,13 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Create a list of number of frames for each animation.
         self.frame_maxes = [len(images) for images in self.all_images]
 
-    # Function that changes Fursa's animation depending on the action performed. Called in update().
+#-------------------------------------------------------------------------------------------------------------------------------
+    # Function that changes Fursa's animation depending on the action performed.
+    # Continuously called in self.update().
     def change_state(self):
+
+        # Each frame list has a state ID that can be found outlined in self.upload_frames().
+        # Each animation type has its own fps.
         if self.attack:
             self.state = 3
             self.current_images = self.all_images[self.state]
@@ -153,50 +168,65 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.state = 0
             self.current_images = self.all_images[self.state]
             self.frame_speed = 200
+#-------------------------------------------------------------------------------------------------------------------------------
 
-    # Function that handles Fursa's key inputs. Called in update().
+    """
+        Function that handles Fursa's key inputs. Called in update().
+        Split into two sections:
+        1. Monitoring held down keys and combinations.
+        2. Monitoring single key press events.
+        Due to the nature of pygame, both have to be used in tandem to
+        create fluid game controls.
+    """
+
     def handle_keys(self):
 
+        # Monitor held down keys. (movement)
+        # If attack animation is not in progress, move in the direction of the pressed key.
         if self.attack == False:
-            # Monitor held down keys. (movement)
             keys = pg.key.get_pressed()
             if keys[pg.K_w]:
-                self.rect.y -= self.dist
+                self.rect.y -= self.speed
             if keys[pg.K_d]:
-                self.rect.x += self.dist
-                self.key_pressed = True
+                self.rect.x += self.speed
+                self.key_pressed = True  # Self.key_pressed() is fed back to change_state(). Found several times throughout handle_keys().
             if keys[pg.K_s]:
-                self.rect.y += self.dist
+                self.rect.y += self.speed
             if keys[pg.K_a]:
-                self.rect.x -= self.dist
+                self.rect.x -= self.speed
                 self.key_pressed = True
             # Running changes speed by holding down shift.
+            # Self.shift is fed back to change_state().
             if keys[pg.K_LSHIFT]:
                 self.shift = True
-                self.dist = 2
+                self.speed = 2
             else:
                 self.shift = False
-                self.dist = 1
+                self.speed = 1
 
         # Pygame event loop.
         for event in pg.event.get():
 
-            # Allow to quit game.
+            # Allow to quit game. Included in this portion to be able to keep only one event loop.
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
 
             # Monitor single key presses. (actions)
+            # If a key is pressed and an attack animation is not in progress, register the key press.
             if event.type == pg.KEYDOWN and self.attack == False:
+
                 self.key_pressed = True
                 self.frame_index = 0 # Frame reset when key is pressed.
 
+                # Registers which way Fursa should be facing. Fed to self.update().
                 if event.key == pg.K_d:
                     self.facing_right = True
-
                 if event.key == pg.K_a:
                     self.facing_right = False
 
+                # Enables attack animation.
+                # Self.attack set to True prevents other key inputs to be registered until the animation is completed.
                 if event.key == pg.K_r:
                     self.attack = True
                     self.attack_charge.play()
@@ -206,8 +236,9 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.jump_noise.play()
                     self.jump = True    # ----------------> Jump starts.
 
+            # Frame reset when key is no longer held down. Self.key_pressed set to False to change state to idle.
             elif event.type == pg.KEYUP and self.attack == False:
-                self.frame_index = 0 # Frame reset when key is no longer held down.
+                self.frame_index = 0
                 self.key_pressed = False
 
             else:
@@ -228,19 +259,28 @@ class Fursa_sprite(pg.sprite.Sprite):
                         self.jump_rate = 20
                         self.jump_index = 0
                         break
+#-------------------------------------------------------------------------------------------------------------------------------
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
+    # Must be fed the blockers of the current map.
     def update(self, blockers):
 
+        # Previous functions.
         self.time = pg.time.get_ticks()
         self.handle_keys()
         self.change_state()
 
-        # Cycle through frames every 0.20 seconds.
+        """
+            Cycle through frames depending on self.frame_speed that is set in self.change_state().
+            Flip the frame image vertically depending on which direction Fursa is facing.
+            Self.frame_override is a boolean representing the previous state of self.facing_right.
+            If the direction that Fursa is facing has changed before a frame can be refreshed,
+            bypasses frame timer and resets the to avoid Fursa momentarily moving facing the wrong direction.
+        """
+
         if (self.time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = self.time
 
-            # Flip the frame image vertically depending on which direction Fursa is facing.
             if self.facing_right:
                 self.image = self.current_images[self.frame_index]
                 self.frame_index += 1
@@ -250,6 +290,8 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.frame_index += 1
                 self.frame_override = False
 
+            # Resets frame index if the max for a certain animation is reached.
+            # Also, sets attack animation back to False in case the action was an attack.
             if self.frame_index == self.frame_maxes[self.state]:
                 self.attack = False
                 self.frame_index = 0
@@ -258,44 +300,53 @@ class Fursa_sprite(pg.sprite.Sprite):
             if self.attack == True and self.frame_index == 8:
                 self.attack_noise.play()
 
-        # Gravity Emulation
+        # Gravity emulation with current map blockers.
         for block in blockers:
             # Checks to see if Fursa is in contact with the ground.
             if self.rect.colliderect(block):
                 pass
             else:
-                # Gravity is disabled when a jump animation is in progress. Accelerates every 20 ms.
+                # If not in contact with the ground, accelerates falling down every 20 ms.
+                # Gravity is disabled when a jump animation is in progress.
                 if (self.time - self.gravity_dt) >= 20 and self.jump is False:
                     self.gravity_dt = self.time
                     self.fall_rate *= 1.1 # Acceleration rate.
                     for i in range(int(self.fall_rate)):
                         self.rect.y += 1
-                        # Halts gravity when Fursa lands on a block.
+                        # Halts falling when Fursa lands on a block.
                         if self.rect.colliderect(block):
                             self.fall_rate = 1
                             break
 
+# Class simply containing projectile frames of various attacks.
+# Created to avoid having to load from the hard drive every time a projectile is created.
 class blast_frames():
     def __init__(self):
-        # Create a list of blasting animation frames.
+
+        # Fursa's attack blast properly separated into frames into a list from a spritesheet.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_spritesheet = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_spritesheet.images_at(coordinates, colorkey = (0, 0, 0))
         self.blast_images = [pg.transform.scale(blast_images_separate[i], (64, 64)) for i in range(0, len(blast_images_separate))]
 
-class blast(pg.sprite.Sprite):
+# Fursa's blast projectile sprite.
+class Fursa_blast(pg.sprite.Sprite):
     def __init__(self, blast_images):
         super().__init__()
         self.images = blast_images
         self.image = blast_images[0]
-        self.rect = pg.Rect(-100, 0, 64, 64)
+        self.rect = pg.Rect(-100, 0, 64, 64) # Random spawn location off map just for initialization.
         self.spawn = False
         self.i = 0
         self.already_spawned = False
 
     def update(self, Fursa, particle_sprites):
+
+        # At the proper frame during Fursa's attack animation, place blast coming out of Fursa's hand.
         if Fursa.attack == True and Fursa.frame_index == 8:
+            # Self.already_spawned is initially set to False. Once Fursa summons the blast it is set to True,
+            # so that existing blasts aren't affected by additional attacks in the future.
             if self.already_spawned == False:
                 self.rect.x = Fursa.rect.x + 74
                 self.rect.y = Fursa.rect.y + 56
@@ -303,13 +354,16 @@ class blast(pg.sprite.Sprite):
                 self.spawn = True
                 self.already_spawned = True
 
-                blast_particle = blast(self.images)
+                # Creates another blast sprite and stores it in sprite group ready for Fursa.
+                blast_particle = Fursa_blast(self.images)
                 particle_sprites.add(blast_particle)
 
+        # Once blast is spawned by Fursa, will keep traveling across map until it hits the
+        # right of left edge of the map in which case the sprite will be killed.
         if self.spawn:
             self.rect.x += 3
             self.i += 1
-            self.image = self.images[self.i]
+            self.image = self.images[self.i] # Frame changing.
             if self.i == 7:
                 self.i = 0
 
@@ -325,7 +379,7 @@ class Level_Start:
         #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
 
-# Game Loop
+# Game Start.
 def main():
 
     # Game parameters.
@@ -337,32 +391,38 @@ def main():
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
 
-    # Declare objects.
+    # Declare Maps.
     Starting_Area = Level_Start()
 
+    # Declare character sprites.
     Fursa = Fursa_sprite()
     character_sprites = pg.sprite.Group()
     character_sprites.add(Fursa)
 
+    # Declare particle sprites.
     blast_particle_frames = blast_frames()
     blast_images = blast_particle_frames.blast_images
-    blast_particle = blast(blast_images)
+    blast_particle = Fursa_blast(blast_images)
     particle_sprites = pg.sprite.Group()
     particle_sprites.add(blast_particle)
 
+    # Game Loop
     while True:
 
-        # Screen background back surface refresh.
+        # Surfaces are blit and updated in order of back to front on screen.
+
+        # Layer 1-------- Screen background back surface refresh.
         screen.blit(Starting_Area.map.back_surface, (0,0))
 
-        # Sprites update.
+        # Layer 2-------- Character sprites update.
         character_sprites.update(Starting_Area.map.blockers)
         character_sprites.draw(screen)
 
+        # Layer 3-------- Particle sprites update.
         particle_sprites.update(Fursa, particle_sprites)
         particle_sprites.draw(screen)
 
-        # Screen background front surface refresh.
+        # Layer 4-------- Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
         clock.tick(90) # Framerate.
