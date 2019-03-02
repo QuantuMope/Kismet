@@ -4,6 +4,7 @@ from pytmx.util_pygame import load_pygame
 import sys
 import os
 from time import sleep
+import random
 
 """ For Fursa class, due to the length, separate functions within the class are
     separated by teal dashed lines as shown below."""
@@ -180,7 +181,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         create fluid game controls.
     """
 
-    def handle_keys(self):
+    def handle_keys(self, time):
 
         # Monitor held down keys. (movement)
         # If attack animation is not in progress, move in the direction of the pressed key.
@@ -249,8 +250,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Jump code is placed outside event loop so that the animation can carry out.
         # Decelerates every 60 ms.
         if self.jump is True:
-            if (self.time - self.jump_dt) >= 60:
-                self.jump_dt = self.time
+            if (time - self.jump_dt) >= 60:
+                self.jump_dt = time
                 self.jump_rate *= 0.8 # Jump deceleration.
                 self.jump_index += 1
                 for i in range(int(self.jump_rate)):
@@ -264,11 +265,10 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
-    def update(self, blockers):
+    def update(self, blockers, time):
 
         # Previous functions.
-        self.time = pg.time.get_ticks()
-        self.handle_keys()
+        self.handle_keys(time)
         self.change_state()
 
         """
@@ -279,8 +279,8 @@ class Fursa_sprite(pg.sprite.Sprite):
             bypasses frame timer and resets the to avoid Fursa momentarily moving facing the wrong direction.
         """
 
-        if (self.time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
-            self.frame_dt = self.time
+        if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
+            self.frame_dt = time
 
             if self.facing_right:
                 self.image = self.current_images[self.frame_index]
@@ -309,8 +309,8 @@ class Fursa_sprite(pg.sprite.Sprite):
             else:
                 # If not in contact with the ground, accelerates falling down every 20 ms.
                 # Gravity is disabled when a jump animation is in progress.
-                if (self.time - self.gravity_dt) >= 20 and self.jump is False:
-                    self.gravity_dt = self.time
+                if (time - self.gravity_dt) >= 20 and self.jump is False:
+                    self.gravity_dt = time
                     self.fall_rate *= 1.1 # Acceleration rate.
                     for i in range(int(self.fall_rate)):
                         self.rect.y += 1
@@ -324,18 +324,86 @@ class skeleton(pg.sprite.Sprite):
     def __init__(self, frames):
         super().__init__()
         self.frames = frames.skeleton_frames
-        self.frame_max = len(frames.skeleton_frames[0])
-        self.idle = self.frames[0]
-        self.image = self.idle[0]
-        self.rect = pg.Rect(400, 400, 96, 96)
-        self.i = 0
+        self.frame_maxes = frames.skeleton_frame_maxes
+        self.current_images = self.frames[0] # Idle
+        self.image = self.current_images[0]
+        self.state = 0
+        self.rect = pg.Rect(500, 400, 72, 96)
+        self.frame_index = 0
+        self.frame_dt = 0
+        self.frame_speed = 100
+        self.facing_right = True
+        self.frame_override = True
+        self.gravity_dt = 0
+        self.fall_rate = 1
+        self.jump = False
+        self.engaged = False
 
-    def update(self, blockers):
-        self.image = self.idle[self.i]
-        self.i += 1
-        if self.i == self.frame_max:
-            self.i = 0
-        self.blockers = blockers
+        self.pre_engaged_dt = 0
+
+
+    def AI(self, blockers, time):
+        # Enemy aggro.
+
+        if not self.engaged:
+            if (time - self.pre_engaged_dt) >= 2500:
+                self.pre_engaged_dt = time
+                self.state = random.randint(0,1) # Random choosing idle or walking.
+                if self.state == 0: # Idle
+                    self.current_images = self.frames[0]
+                if self.state == 1:
+                    self.current_images = self.frames[1]
+                    self.facing_right = bool(random.getrandbits(1)) # Random choosing direction facing.
+                self.frame_index = 0
+            if self.state == 1:
+                if self.facing_right:
+                    self.rect.x += 1
+                else:
+                    self.rect.x -= 1
+
+        for block in blockers:
+            if self.rect.left <= block.left or self.rect.right >= block.right:
+                self.state == 0
+
+
+
+
+    def update(self, blockers, time):
+
+        self.AI(blockers, time)
+
+        # Frame update and flipping.
+
+        if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
+            self.frame_dt = time
+
+            if self.facing_right:
+                self.image = self.current_images[self.frame_index]
+                self.frame_index += 1
+                self.frame_override = True
+            else:
+                self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
+                self.frame_index += 1
+                self.frame_override = False
+
+            if self.frame_index == self.frame_maxes[self.state]:
+                self.attack = False
+                self.frame_index = 0
+
+        # Gravity emulation with current map blockers.
+        # Same as Fursa. Additional comments can be found there.
+        for block in blockers:
+            if self.rect.colliderect(block):
+                pass
+            else:
+                if (time - self.gravity_dt) >= 20 and self.jump is False:
+                    self.gravity_dt = time
+                    self.fall_rate *= 1.1
+                    for i in range(int(self.fall_rate)):
+                        self.rect.y += 1
+                        if self.rect.colliderect(block):
+                            self.fall_rate = 1
+                            break
 
 class enemy_frames():
     def __init__(self):
@@ -357,6 +425,8 @@ class enemy_frames():
                       ]
 
         sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
+
+        self.skeleton_frame_maxes = [len(frame_amount) for frame_amount in coordinates]
 
         spritesheets = [spritesheet(file) for file in os.listdir(directory)]
         spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey = (0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
@@ -427,6 +497,7 @@ class Level_Start:
         self.music = pg.mixer.music.load('301 - Good Memories.mp3')
         #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
+        print(self.map.blockers[0])
 
 # Game Start.
 def main():
@@ -462,6 +533,7 @@ def main():
     # Game Loop
     while True:
 
+        time = pg.time.get_ticks()
         # Surfaces are blit and updated in order of back to front on screen.
 
         # Layer 1-------- Screen background back surface refresh.
@@ -472,14 +544,14 @@ def main():
         particle_sprites.draw(screen)
 
         # Layer 3-------- Character sprites update.
-        character_sprites.update(Starting_Area.map.blockers)
+        character_sprites.update(Starting_Area.map.blockers, time)
         character_sprites.draw(screen)
 
         # Layer 4-------- Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
         clock.tick(90) # Framerate.
-        print(clock)
+        #print(clock)
 
         pg.display.flip()
 
