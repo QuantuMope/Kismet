@@ -328,7 +328,7 @@ class skeleton(pg.sprite.Sprite):
         self.current_images = self.frames[0] # Idle
         self.image = self.current_images[0]
         self.state = 0
-        self.rect = pg.Rect(500, 400, 72, 96)
+        self.rect = pg.Rect(750, 400, 72, 96)
         self.frame_index = 0
         self.frame_dt = 0
         self.frame_speed = 100
@@ -337,42 +337,74 @@ class skeleton(pg.sprite.Sprite):
         self.gravity_dt = 0
         self.fall_rate = 1
         self.jump = False
-        self.engaged = False
+        self.aggroed = False
+        self.reaction_done = False
+        self.chase = False
 
         self.pre_engaged_dt = 0
 
+    # Skeleton AI.
+    def AI(self, blockers, time, character):
 
-    def AI(self, blockers, time):
-        # Enemy aggro.
-
-        if not self.engaged:
+        # When not aggroed, pace back and forth spawn location.
+        if not self.aggroed:
             if (time - self.pre_engaged_dt) >= 2500:
                 self.pre_engaged_dt = time
-                self.state = random.randint(0,1) # Random choosing idle or walking.
+                self.state ^= 1
                 if self.state == 0: # Idle
-                    self.current_images = self.frames[0]
+                    pass
                 if self.state == 1:
-                    self.current_images = self.frames[1]
-                    self.facing_right = bool(random.getrandbits(1)) # Random choosing direction facing.
-                self.frame_index = 0
+                    self.facing_right = not self.facing_right
+
             if self.state == 1:
                 if self.facing_right:
                     self.rect.x += 1
                 else:
                     self.rect.x -= 1
 
-        for block in blockers:
-            if self.rect.left <= block.left or self.rect.right >= block.right:
-                self.state == 0
+        # for block in blockers:
+        #     if self.rect.left <= block.left or self.rect.right >= block.right:
+        #         self.state == 0
+
+        # If within aggro range, switch animation to react.
+        if abs(self.rect.centerx - character.rect.centerx) < 200 and not self.aggroed:
+            self.frame_speed = 400
+            self.state = 2
+            self.aggroed = True
+
+        # Monitor when reaction frames are finished.
+        if self.state == 2 and self.frame_index == 4:
+            self.reaction_done = True
+            self.chase = True
+
+        # When aggroed and reaction is done, move towards the player.
+        if self.chase:
+            if self.aggroed and self.reaction_done:
+                self.state = 1
+                self.frame_speed = 100
+                if (self.rect.centerx - character.rect.centerx) > 0:
+                    self.facing_right = False
+                    self.rect.x -= 1
+                else:
+                    self.facing_right = True
+                    self.rect.x += 1
+
+        if abs(self.rect.centerx - character.rect.centerx) < 100 and self.chase:
+            self.frame_speed = 250
+            self.chase = False
+            self.rect.bottom += 100
+            # Start attack animation.
+            self.state = 3
 
 
 
+    def update(self, blockers, time, character):
 
-    def update(self, blockers, time):
-
-        self.AI(blockers, time)
-
+        self.AI(blockers, time, character)
+        self.current_images = self.frames[self.state]
         # Frame update and flipping.
+
+        if self.state is not self.state: self.frame_index = 0
 
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
@@ -387,8 +419,12 @@ class skeleton(pg.sprite.Sprite):
                 self.frame_override = False
 
             if self.frame_index == self.frame_maxes[self.state]:
-                self.attack = False
-                self.frame_index = 0
+                if self.state == 2:
+                    pass
+                else:
+                    self.attack = False
+                    self.frame_index = 0
+
 
         # Gravity emulation with current map blockers.
         # Same as Fursa. Additional comments can be found there.
@@ -520,8 +556,9 @@ def main():
     character_sprites.add(Fursa)
 
     enemy_images = enemy_frames()
+    enemy_sprites = pg.sprite.Group()
     skeleton_01 = skeleton(enemy_images)
-    character_sprites.add(skeleton_01)
+    enemy_sprites.add(skeleton_01)
 
     # Declare particle sprites.
     blast_particle_frames = blast_frames()
@@ -547,11 +584,15 @@ def main():
         character_sprites.update(Starting_Area.map.blockers, time)
         character_sprites.draw(screen)
 
-        # Layer 4-------- Screen background front surface refresh.
+        # Layer 4-------- Enemy sprites update.
+        enemy_sprites.update(Starting_Area.map.blockers, time, Fursa)
+        enemy_sprites.draw(screen)
+
+        # Layer 5-------- Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
         clock.tick(90) # Framerate.
-        #print(clock)
+        print(clock)
 
         pg.display.flip()
 
