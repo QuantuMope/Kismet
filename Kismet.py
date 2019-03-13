@@ -327,6 +327,7 @@ class skeleton(pg.sprite.Sprite):
         self.frame_maxes = frames.skeleton_frame_maxes
         self.current_images = self.frames[0] # Idle
         self.image = self.current_images[0]
+        self.prev_state = 0
         self.state = 0
         self.rect = pg.Rect(750, 400, 72, 96)
         self.frame_index = 0
@@ -340,12 +341,18 @@ class skeleton(pg.sprite.Sprite):
         self.aggroed = False
         self.reaction_done = False
         self.chase = False
-
+        self.attack = False
         self.pre_engaged_dt = 0
+        self.one_shot = True
+        self.change_state = False
+        self.pstate = 0
+        self.cstate = 0
+
 
     # Skeleton AI.
     def AI(self, blockers, time, character):
 
+        self.prev_state = self.state
         # When not aggroed, pace back and forth spawn location.
         if not self.aggroed:
             if (time - self.pre_engaged_dt) >= 2500:
@@ -355,7 +362,7 @@ class skeleton(pg.sprite.Sprite):
                     pass
                 if self.state == 1:
                     self.facing_right = not self.facing_right
-
+                self.frame_index = 0
             if self.state == 1:
                 if self.facing_right:
                     self.rect.x += 1
@@ -371,15 +378,16 @@ class skeleton(pg.sprite.Sprite):
             self.frame_speed = 400
             self.state = 2
             self.aggroed = True
+            self.frame_index = 0
 
-        # Monitor when reaction frames are finished.
+        # Allow for reaction frames to finish.
         if self.state == 2 and self.frame_index == 4:
-            self.reaction_done = True
             self.chase = True
+            self.frame_index = 0
 
         # When aggroed and reaction is done, move towards the player.
-        if self.chase:
-            if self.aggroed and self.reaction_done:
+        if self.attack == False:
+            if self.aggroed and self.chase:
                 self.state = 1
                 self.frame_speed = 100
                 if (self.rect.centerx - character.rect.centerx) > 0:
@@ -389,25 +397,46 @@ class skeleton(pg.sprite.Sprite):
                     self.facing_right = True
                     self.rect.x += 1
 
+        # Start attack animation.
         if abs(self.rect.centerx - character.rect.centerx) < 100 and self.chase:
-            self.frame_speed = 250
-            self.chase = False
-            self.rect.bottom += 100
-            # Start attack animation.
+            self.attack = True
+            self.frame_speed = 150
             self.state = 3
 
 
+        if self.prev_state != self.state:
+            self.change_state = True
+            self.pstate = self.prev_state
+            self.cstate = self.state
+
+    def change_rect_by_state(self, old_state, new_state, self_facing):
+        self.frame_index = 0
+        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
+        old_size_x = sizes[old_state][0]
+        new_size_x = sizes[new_state][0]
+        old_size_y = sizes[old_state][1]
+        new_size_y = sizes[new_state][1]
+        x_dt = new_size_x - old_size_x
+        y_dt = new_size_y - old_size_y
+        self.rect.width = old_size_x + x_dt
+        self.rect.height = old_size_y + y_dt
+        self.rect.y -= y_dt
+        if self.facing_right is not True: self.rect.x -= x_dt
 
     def update(self, blockers, time, character):
 
         self.AI(blockers, time, character)
-        self.current_images = self.frames[self.state]
-        # Frame update and flipping.
 
-        if self.state is not self.state: self.frame_index = 0
+        # Frame update and flipping.
 
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
+
+            self.current_images = self.frames[self.state]
+
+            if self.change_state is True:
+                self.change_rect_by_state(self.pstate, self.cstate, self.facing_right)
+                self.change_state = False
 
             if self.facing_right:
                 self.image = self.current_images[self.frame_index]
@@ -456,7 +485,7 @@ class enemy_frames():
                         ,[(22 * i, 0, 22, 33) for i in range(0, 13)]       # Walking----------------1
                         ,[(22 * i, 0, 22, 32) for i in range(0, 4 )]       # React------------------2
                         ,[(43 * i, 0, 43, 37) for i in range(0, 18)]       # Attacking--------------3
-                        ,[(30 * i, 0, 30, 32) for i in range(0, 8) ]       # Hit--------------------4
+                        ,[(30 * i, 0, 30, 32) for i in range(0, 8 )]       # Hit--------------------4
                         ,[(33 * i, 0, 33, 32) for i in range(0, 15)]       # Death------------------5
                       ]
 
@@ -592,7 +621,7 @@ def main():
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
         clock.tick(90) # Framerate.
-        print(clock)
+        #print(clock)
 
         pg.display.flip()
 
