@@ -403,7 +403,6 @@ class skeleton(pg.sprite.Sprite):
             self.frame_speed = 150
             self.state = 3
 
-
         if self.prev_state != self.state:
             self.change_state = True
             self.pstate = self.prev_state
@@ -511,47 +510,80 @@ class blast_frames():
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_ss = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
-        self.blast_images = [pg.transform.scale(blast_images_separate[i], (48, 48)) for i in range(0, len(blast_images_separate))]
+        self.blast_images_r = [pg.transform.scale(blast_images_separate[i], (48, 48)) for i in range(0, len(blast_images_separate))]
+        self.blast_images_l = [pg.transform.flip(self.blast_images_r[i], True, False) for i in range(0, len(self.blast_images_r))]
 
 # Fursa's blast projectile sprite.
 class Fursa_blast(pg.sprite.Sprite):
-    def __init__(self, blast_images):
+    def __init__(self, blast_images_r, blast_images_l):
         super().__init__()
-        self.images = blast_images
-        self.image = blast_images[0]
+        self.blast_images_r = blast_images_r
+        self.blast_images_l = blast_images_l
+        self.images = blast_images_r
+        self.image = blast_images_r[0]
         self.rect = pg.Rect(-100, 0, 64, 64) # Random spawn location off map just for initialization.
         self.spawn = False
         self.i = 0
         self.already_spawned = False
+        self.flow_right = True
 
     def update(self, Fursa, particle_sprites):
 
         # At the proper frame during Fursa's attack animation, place blast coming out of Fursa's hand.
         if Fursa.attack == True and Fursa.frame_index == 8:
+
             # Self.already_spawned is initially set to False. Once Fursa summons the blast it is set to True,
             # so that existing blasts aren't affected by additional attacks in the future.
             if self.already_spawned == False:
-                self.rect.x = Fursa.rect.x + 70
-                self.rect.y = Fursa.rect.y + 52
-                self.image = self.images[0]
-                self.spawn = True
-                self.already_spawned = True
 
-                # Creates another blast sprite and stores it in sprite group ready for Fursa.
-                sleep(0.05) # Waits 50 ms to allow frame index to change so two blasts are not spawned.
-                blast_particle = Fursa_blast(self.images)
-                particle_sprites.add(blast_particle)
+                if Fursa.facing_right:
+                    self.flow_right = True
+                else:
+                    self.flow_right = False
+
+                if self.flow_right:
+                    self.rect.x = Fursa.rect.x + 70
+                    self.rect.y = Fursa.rect.y + 52
+                    self.images = self.blast_images_r
+
+                    self.image = self.images[0]
+                    self.spawn = True
+                    self.already_spawned = True
+                    # Creates another blast sprite and stores it in sprite group ready for Fursa.
+                    sleep(0.05) # Waits 50 ms to allow frame index to change so two blasts are not spawned.
+                    blast_particle = Fursa_blast(self.blast_images_r, self.blast_images_l)
+                    particle_sprites.add(blast_particle)
+
+
+                else:
+                    self.rect.x = Fursa.rect.x + 20
+                    self.rect.y = Fursa.rect.y + 52
+                    self.images = self.blast_images_l
+
+                    self.image = self.images[0]
+                    self.spawn = True
+                    self.already_spawned = True
+                    # Creates another blast sprite and stores it in sprite group ready for Fursa.
+                    sleep(0.05) # Waits 50 ms to allow frame index to change so two blasts are not spawned.
+                    blast_particle = Fursa_blast(self.blast_images_r, self.blast_images_l)
+                    particle_sprites.add(blast_particle)
+
 
         # Once blast is spawned by Fursa, will keep traveling across map until it hits the
         # right of left edge of the map in which case the sprite will be killed.
         if self.spawn:
-            self.rect.x += 3
+            if self.images == self.blast_images_r:
+                self.rect.x += 3
+            else:
+                self.rect.x -= 3
+
             self.i += 1
             self.image = self.images[self.i] # Frame changing.
             if self.i == 7:
                 self.i = 0
 
-            if self.rect.right > 1280 or self.rect.right < 0:
+            if self.rect.right > 1280 or self.rect.left < 0:
+                self.spawn = False
                 self.kill()
 
 # Starting area. Stores map and music data.
@@ -562,7 +594,7 @@ class Level_Start:
         self.music = pg.mixer.music.load('301 - Good Memories.mp3')
         #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
-        print(self.map.blockers[0])
+
 
 # Game Start.
 def main():
@@ -591,8 +623,9 @@ def main():
 
     # Declare particle sprites.
     blast_particle_frames = blast_frames()
-    blast_images = blast_particle_frames.blast_images
-    blast_particle = Fursa_blast(blast_images)
+    blast_images_r = blast_particle_frames.blast_images_r
+    blast_images_l = blast_particle_frames.blast_images_l
+    blast_particle = Fursa_blast(blast_images_r, blast_images_l)
     particle_sprites = pg.sprite.Group()
     particle_sprites.add(blast_particle)
 
@@ -621,7 +654,7 @@ def main():
         screen.blit(Starting_Area.map.front_surface, (0,0))
 
         clock.tick(90) # Framerate.
-        #print(clock)
+        print(clock)
 
         pg.display.flip()
 
