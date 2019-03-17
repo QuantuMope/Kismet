@@ -513,6 +513,17 @@ class blast_frames():
         self.blast_images_r = [pg.transform.scale(blast_images_separate[i], (48, 48)) for i in range(0, len(blast_images_separate))]
         self.blast_images_l = [pg.transform.flip(self.blast_images_r[i], True, False) for i in range(0, len(self.blast_images_r))]
 
+        # Impact frames.
+        coordinates = [(0, 128 * i, 128, 128) for i in range(0,8)]
+        impact_images_ss = spritesheet('energyBallImpact.png')
+        impact_images_separate = impact_images_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        self.impact_images_r = [pg.transform.scale(impact_images_separate[i], (48, 48)) for i in range(0, len(impact_images_separate))]
+        self.impact_images_l = [pg.transform.flip(self.impact_images_r[i], True, False) for i in range(0, len(self.impact_images_r))]
+
+        # Combine impact frames to blast frames list. Blast frames are indexed 0 - 7. Impact frames are indexed 8 - 14.
+        self.blast_images_r = self.blast_images_r + self.impact_images_r
+        self.blast_images_l = self.blast_images_l + self.impact_images_l
+
 # Fursa's blast projectile sprite.
 class Fursa_blast(pg.sprite.Sprite):
     def __init__(self, blast_images_r, blast_images_l):
