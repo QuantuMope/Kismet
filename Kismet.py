@@ -97,7 +97,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((0, 0), (128, 102)) # Spawn point and collision size.
+        self.rect = pg.Rect((200, 0), (128, 102)) # Spawn point and collision size.
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -113,7 +113,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.hp = 3
 
         # Load sound effects.
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa")
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
@@ -134,12 +134,12 @@ class Fursa_sprite(pg.sprite.Sprite):
         #-----------------------0------------1------------2------------3--------------4--------------5-----------6-------#
         self.all_images = [idle_images, walk_images, run_images, attack_images, shield_images, death_images, hit_images]
 
-        directories =      ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Idle"          # Idle animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Walk"          # Walking animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Run"           # Run animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_01"     # Attack animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Attack_02"     # Shield animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas/Death"]        # Hit & Death animation.
+        directories =      ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Idle"          # Idle animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Walk"          # Walking animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Run"           # Run animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Attack_01"     # Attack animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Attack_02"     # Shield animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Death"]        # Hit & Death animation.
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):
@@ -244,6 +244,10 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.jump_noise.play()
                     self.jump = True    # ----------------> Jump starts.
 
+                if event.key == pg.K_ESCAPE:
+                     pg.quit()
+                     sys.exit()
+
             # Frame reset when key is no longer held down. Self.key_pressed set to False to change state to idle.
             elif event.type == pg.KEYUP and self.attack == False:
                 self.frame_index = 0
@@ -337,214 +341,13 @@ class Fursa_sprite(pg.sprite.Sprite):
                             self.fall_rate = 1
                             break
 
-# ----------------------------------------------------ENEMIES-------------------------------------------------------------------
-class skeleton(pg.sprite.Sprite):
-    def __init__(self, frames):
-        super().__init__()
-        self.frames = frames.skeleton_frames
-        self.frame_maxes = frames.skeleton_frame_maxes
-        self.current_images = self.frames[0] # Idle
-        self.image = self.current_images[0]
-        self.prev_state = 0
-        self.state = 0
-        self.rect = pg.Rect(750, 400, 72, 96)
-        self.frame_index = 0
-        self.frame_dt = 0
-        self.frame_speed = 100
-        self.facing_right = True
-        self.frame_override = True
-        self.gravity_dt = 0
-        self.fall_rate = 1
-        self.jump = False
-        self.aggroed = False
-        self.reaction_done = False
-        self.chase = False
-        self.attack = False
-        self.pre_engaged_dt = 0
-        self.one_shot = True
-        self.change_state = False
-        self.pstate = 0
-        self.cstate = 0
-        self.hit = False
-        self.hp = 3
-
-
-    # Skeleton AI.
-    def AI(self, blockers, time, character, particle_sprites):
-
-        self.prev_state = self.state
-
-        if self.hit is False:
-            # When not aggroed, pace back and forth spawn location.
-            if not self.aggroed:
-                if (time - self.pre_engaged_dt) >= 2500:
-                    self.pre_engaged_dt = time
-                    self.state ^= 1
-                    if self.state == 0: # Idle
-                        pass
-                    if self.state == 1:
-                        self.facing_right = not self.facing_right
-                    self.frame_index = 0
-                if self.state == 1:
-                    if self.facing_right:
-                        self.rect.x += 1
-                    else:
-                        self.rect.x -= 1
-
-            # for block in blockers:
-            #     if self.rect.left <= block.left or self.rect.right >= block.right:
-            #         self.state == 0
-
-            # If within aggro range, switch animation to react.
-            if abs(self.rect.centerx - character.rect.centerx) < 200 and not self.aggroed:
-                self.frame_speed = 400
-                self.state = 2
-                self.aggroed = True
-                self.frame_index = 0
-
-            # Allow for reaction frames to finish.
-            if self.state == 2 and self.frame_index == 4:
-                self.chase = True
-                self.frame_index = 0
-
-            # When aggroed and reaction is done, move towards the player.
-            if self.attack == False:
-                if self.aggroed and self.chase:
-                    self.state = 1
-                    self.frame_speed = 100
-                    if (self.rect.centerx - character.rect.centerx) > 0:
-                        self.facing_right = False
-                        self.rect.x -= 1
-                    else:
-                        self.facing_right = True
-                        self.rect.x += 1
-
-            # Start attack animation.
-            if abs(self.rect.centerx - character.rect.centerx) < 100 and self.chase:
-                self.attack = True
-                self.frame_speed = 150
-                self.state = 3
-
-            for particle in particle_sprites:
-                if particle.particle_hit is True:
-                    self.chase = True
-                    self.aggroed = True
-                    self.hit = True
-                    self.frame_speed = 150
-                    self.state = 4
-                    self.hp -= 1
-
-        if self.hp <= 0:
-            self.state = 5
-
-        if self.prev_state != self.state:
-            self.change_state = True
-            self.pstate = self.prev_state
-            self.cstate = self.state
-
-
-    def change_rect_by_state(self, old_state, new_state, self_facing):
-        self.frame_index = 0
-        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
-        old_size_x = sizes[old_state][0]
-        new_size_x = sizes[new_state][0]
-        old_size_y = sizes[old_state][1]
-        new_size_y = sizes[new_state][1]
-        x_dt = new_size_x - old_size_x
-        y_dt = new_size_y - old_size_y
-        self.rect.width = old_size_x + x_dt
-        self.rect.height = old_size_y + y_dt
-        self.rect.y -= y_dt
-        if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt
-
-    def update(self, blockers, time, character, particle_sprites):
-
-        self.AI(blockers, time, character, particle_sprites)
-
-        # Frame update and flipping.
-
-        if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
-            self.frame_dt = time
-
-            self.current_images = self.frames[self.state]
-
-            if self.change_state is True:
-                self.change_rect_by_state(self.pstate, self.cstate, self.facing_right)
-                self.change_state = False
-
-            if self.facing_right:
-                self.image = self.current_images[self.frame_index]
-                self.frame_index += 1
-                self.frame_override = True
-            else:
-                self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
-                self.frame_index += 1
-                self.frame_override = False
-
-            if self.frame_index == self.frame_maxes[self.state]:
-                if self.state == 2:
-                    pass
-                elif self.state == 5:
-                    self.kill()
-                else:
-                    self.attack = False
-                    self.hit = False
-                    self.frame_index = 0
-
-
-        # Gravity emulation with current map blockers.
-        # Same as Fursa. Additional comments can be found there.
-        for block in blockers:
-            if self.rect.colliderect(block):
-                pass
-            else:
-                if (time - self.gravity_dt) >= 20 and self.jump is False:
-                    self.gravity_dt = time
-                    self.fall_rate *= 1.1
-                    for i in range(int(self.fall_rate)):
-                        self.rect.y += 1
-                        if self.rect.colliderect(block):
-                            self.fall_rate = 1
-                            break
-
-class enemy_frames():
-    def __init__(self):
-        self.skeleton_frames = []
-        self.skeleton_frames_func()
-
-    def skeleton_frames_func(self):
-        directory = "C:/Users/Andrew/Desktop/Python_Projects/Kismet/Enemies/Skeleton/Sprite Sheets"
-        os.chdir(directory)
-
-        # Spritesheet coordinates.                                                               Indexes
-        coordinates = [
-                         [(24 * i, 0, 24, 32) for i in range(0, 11)]       # Idle. -----------------0
-                        ,[(22 * i, 0, 22, 33) for i in range(0, 13)]       # Walking----------------1
-                        ,[(22 * i, 0, 22, 32) for i in range(0, 4 )]       # React------------------2
-                        ,[(43 * i, 0, 43, 37) for i in range(0, 18)]       # Attacking--------------3
-                        ,[(30 * i, 0, 30, 32) for i in range(0, 8 )]       # Hit--------------------4
-                        ,[(33 * i, 0, 33, 32) for i in range(0, 15)]       # Death------------------5
-                      ]
-
-        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
-
-        self.skeleton_frame_maxes = [len(frame_amount) for frame_amount in coordinates]
-
-        spritesheets = [spritesheet(file) for file in os.listdir(directory)]
-        spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey = (0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
-
-        for i, ss_sep in enumerate(spritesheets_separate):
-            scaled_frames = [pg.transform.scale(ss_sep[e], sizes[i]) for e in range(0, len(ss_sep))]
-            self.skeleton_frames.append(scaled_frames)
-
-
 # Class simply containing projectile frames of various attacks.
 # Created to avoid having to load from the hard drive every time a projectile is created.
 class blast_frames():
     def __init__(self):
 
         # Fursa's attack blast properly separated into frames into a list from a spritesheet.
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Furas")
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa")
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_ss = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
@@ -652,14 +455,219 @@ class Fursa_blast(pg.sprite.Sprite):
                 if self.rect.collidepoint(enemy.rect.x + 20, enemy.rect.centery + 20):
                     self.particle_hit = True
 
+# ----------------------------------------------------ENEMIES-------------------------------------------------------------------
+class skeleton(pg.sprite.Sprite):
+    def __init__(self, frames):
+        super().__init__()
+        self.frames = frames.skeleton_frames
+        self.frame_maxes = frames.skeleton_frame_maxes
+        self.current_images = self.frames[0] # Idle
+        self.image = self.current_images[0]
+        self.prev_state = 0
+        self.state = 0
+        self.rect = pg.Rect(1200, 400, 72, 96)
+        self.frame_index = 0
+        self.frame_dt = 0
+        self.frame_speed = 100
+        self.facing_right = True
+        self.frame_override = True
+        self.gravity_dt = 0
+        self.fall_rate = 1
+        self.jump = False
+        self.aggroed = False
+        self.reaction_done = False
+        self.chase = False
+        self.attack = False
+        self.pre_engaged_dt = 0
+        self.one_shot = True
+        self.change_state = False
+        self.pstate = 0
+        self.cstate = 0
+        self.hit = False
+        self.hp = 3
+
+    # Skeleton AI.
+    def AI(self, blockers, time, character, particle_sprites):
+
+        self.prev_state = self.state
+
+        if self.hit is False:
+            # When not aggroed, pace back and forth spawn location.
+            if not self.aggroed:
+                if (time - self.pre_engaged_dt) >= 2500:
+                    self.pre_engaged_dt = time
+                    self.state ^= 1
+                    if self.state == 0: # Idle
+                        pass
+                    if self.state == 1:
+                        self.facing_right = not self.facing_right
+                    self.frame_index = 0
+                if self.state == 1:
+                    if self.facing_right:
+                        self.rect.x += 1
+                    else:
+                        self.rect.x -= 1
+
+            # for block in blockers:
+            #     if self.rect.left <= block.left or self.rect.right >= block.right:
+            #         self.state == 0
+
+            # If within aggro range, switch animation to react.
+            if abs(self.rect.centerx - character.rect.centerx) < 200 and not self.aggroed:
+                self.frame_speed = 400
+                self.state = 2
+                self.aggroed = True
+                self.frame_index = 0
+
+            # Allow for reaction frames to finish.
+            if self.state == 2 and self.frame_index == 4:
+                self.chase = True
+                self.frame_index = 0
+
+            # When aggroed and reaction is done, move towards the player.
+            if self.attack == False:
+                if self.aggroed and self.chase:
+                    self.state = 1
+                    self.frame_speed = 100
+                    if (self.rect.centerx - character.rect.centerx) > 0:
+                        self.facing_right = False
+                        self.rect.x -= 1
+                    else:
+                        self.facing_right = True
+                        self.rect.x += 1
+
+            # Start attack animation.
+            if abs(self.rect.centerx - character.rect.centerx) < 100 and self.chase:
+                self.attack = True
+                self.frame_speed = 150
+                self.state = 3
+
+            for particle in particle_sprites:
+                if particle.particle_hit is True:
+                    self.chase = True
+                    self.aggroed = True
+                    self.hit = True
+                    self.frame_speed = 150
+                    self.state = 4
+                    self.hp -= 1
+
+        if self.hp <= 0:
+            self.state = 5
+
+        if self.prev_state != self.state:
+            self.change_state = True
+            self.pstate = self.prev_state
+            self.cstate = self.state
+
+    def change_rect_by_state(self, old_state, new_state, self_facing):
+        self.frame_index = 0
+        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
+        old_size_x = sizes[old_state][0]
+        new_size_x = sizes[new_state][0]
+        old_size_y = sizes[old_state][1]
+        new_size_y = sizes[new_state][1]
+        x_dt = new_size_x - old_size_x
+        y_dt = new_size_y - old_size_y
+        self.rect.width = old_size_x + x_dt
+        self.rect.height = old_size_y + y_dt
+        self.rect.y -= y_dt
+        if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt
+
+    def update(self, blockers, time, character, particle_sprites):
+
+        self.AI(blockers, time, character, particle_sprites)
+
+        # Frame update and flipping.
+
+        if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
+            self.frame_dt = time
+
+            self.current_images = self.frames[self.state]
+
+            if self.change_state is True:
+                self.change_rect_by_state(self.pstate, self.cstate, self.facing_right)
+                self.change_state = False
+
+            if self.facing_right:
+                self.image = self.current_images[self.frame_index]
+                self.frame_index += 1
+                self.frame_override = True
+            else:
+                self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
+                self.frame_index += 1
+                self.frame_override = False
+
+            if self.frame_index == self.frame_maxes[self.state]:
+                if self.state == 2:
+                    pass
+                elif self.state == 5:
+                    self.kill()
+                else:
+                    self.attack = False
+                    self.hit = False
+                    self.frame_index = 0
+
+
+        # Gravity emulation with current map blockers.
+        # Same as Fursa. Additional comments can be found there.
+        for block in blockers:
+            if self.rect.colliderect(block):
+                pass
+            else:
+                if (time - self.gravity_dt) >= 20 and self.jump is False:
+                    self.gravity_dt = time
+                    self.fall_rate *= 1.1
+                    for i in range(int(self.fall_rate)):
+                        self.rect.y += 1
+                        if self.rect.colliderect(block):
+                            self.fall_rate = 1
+                            break
+
+class enemy_frames():
+    def __init__(self):
+        self.skeleton_frames = []
+        self.skeleton_frames_func()
+
+    def skeleton_frames_func(self):
+        directory = "C:/Users/Andrew/Desktop/Python_Projects/Kismet/Enemies/Skeleton/Sprite Sheets"
+        os.chdir(directory)
+
+        # Spritesheet coordinates.                                                               Indexes
+        coordinates = [
+                         [(24 * i, 0, 24, 32) for i in range(0, 11)]       # Idle. -----------------0
+                        ,[(22 * i, 0, 22, 33) for i in range(0, 13)]       # Walking----------------1
+                        ,[(22 * i, 0, 22, 32) for i in range(0, 4 )]       # React------------------2
+                        ,[(43 * i, 0, 43, 37) for i in range(0, 18)]       # Attacking--------------3
+                        ,[(30 * i, 0, 30, 32) for i in range(0, 8 )]       # Hit--------------------4
+                        ,[(33 * i, 0, 33, 32) for i in range(0, 15)]       # Death------------------5
+                      ]
+
+        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
+
+        self.skeleton_frame_maxes = [len(frame_amount) for frame_amount in coordinates]
+
+        spritesheets = [spritesheet(file) for file in os.listdir(directory)]
+        spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey = (0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
+
+        for i, ss_sep in enumerate(spritesheets_separate):
+            scaled_frames = [pg.transform.scale(ss_sep[e], sizes[i]) for e in range(0, len(ss_sep))]
+            self.skeleton_frames.append(scaled_frames)
+
 # Starting area. Stores map and music data.
-class Level_Start:
+class Map_01:
     def __init__(self):
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
         self.music = pg.mixer.music.load('301 - Good Memories.mp3')
-        #pg.mixer.music.play(loops = -1, start = 0.0)
+        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
+
+
+    def dialog(self):
+        return
+
+    def update(self):
+        return
 
 
 # Game Start.
@@ -669,13 +677,15 @@ def main():
     pg.mixer.pre_init(44100, -16, 2, 512)
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
-    size = width, height = 1280, 640
-    screen = pg.display.set_mode(size)
+    size = width, height = 1920, 1200
+    screen = pg.display.set_mode(size, pg.FULLSCREEN)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
+    dialog_box = load_image('dialogue_box.png')
+    dialog_box = pg.transform.scale(dialog_box, (795, 195))
 
     # Declare Maps.
-    Starting_Area = Level_Start()
+    Starting_Area = Map_01()
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
@@ -697,8 +707,6 @@ def main():
     blast_particle = Fursa_blast(blast_images_r, blast_images_l, impact_images_r, impact_images_l)
     particle_sprites = pg.sprite.Group()
     particle_sprites.add(blast_particle)
-
-    particle_hit = False
 
     # Game Loop
     while True:
@@ -723,6 +731,8 @@ def main():
 
         # Layer 5-------- Screen background front surface refresh.
         screen.blit(Starting_Area.map.front_surface, (0,0))
+
+        #screen.blit(dialog_box, (200,100))
 
 
 
