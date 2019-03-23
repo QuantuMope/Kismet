@@ -13,13 +13,32 @@ def load_image(name):
     return image
 
 # Function to render and blit dialog.
-def dialog(text, screen, dialog_font, dialog_box, dialog_noise, first_time):
+def dialog(text, name, screen, dialog_font, dialog_box, dialog_noise, first_time):
     black = (0,0,0)
-    dialog_text, rect = dialog_font.render(text)
     pg.draw.rect(screen, black, (0,0,1920,200))
     pg.draw.rect(screen, black, (0,1000,1920,200))
     screen.blit(dialog_box, (550,1000))
-    screen.blit(dialog_text, (600,1050))
+
+    if len(text) > 50:
+        i = 50
+        while text[i] != ' ':
+            i += 1
+        if i > 52:
+            i = 50
+            while text[i] != ' ':
+                i -= 1
+        new_text = [text[0:i], text[i+1:]]
+        for i, line in enumerate(new_text):
+            dialog_text, rect1 = dialog_font.render(line)
+            screen.blit(dialog_text, (600, 1075 + 50 * i))
+    else:
+        dialog_text, rect1 = dialog_font.render(text)
+        screen.blit(dialog_text, (600,1075))
+
+
+    name_text, rect2 = dialog_font.render(name)
+    screen.blit(name_text, (600,1025))
+
     if first_time:
         dialog_noise.play()
 
@@ -104,7 +123,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((200, 0), (128, 102)) # Spawn point and collision size.
+        self.rect = pg.Rect((400, 820), (128, 102)) # Spawn point and collision size.
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -746,23 +765,40 @@ class Map_01:
         # Map graphics and music.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
-        self.music = pg.mixer.music.load('301 - Good Memories.mp3')
-        #pg.mixer.music.play(loops = -1, start = 0.0)
+        self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
+        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
         self.first_time = True
 
         # Declare npcs.
-        self.Masir = Masir_sprite(800, 200)
+        self.Masir = Masir_sprite(800, 720)
         npc_sprites.add(self.Masir)
+
+        # Dialog dictionary.
+        self.i = 0
+        self.dialog = {                0: ["Where am I?",   'Boy'],
+                                       1: ["... Who am I?", 'Boy'],
+                                       2: ["So you\'ve awakened, my child.", '???'],
+                                       3: ["Do you know me?", 'Boy'],
+                                       4: ["It seems you\'ve lost more of your memory than I would have liked.", '???'],
+                                       5: ["Well that seems to have answered my question. Would you be so kind as to tell me my name?", 'Boy'],
+                                       6: ["Your name is Fursa, son of Chaos. Please follow me, as we have much to accomplish.", '???']}
+
+        self.first_stage = True
 
 
     def cutscene_event(self, character, screen, dialog_font, dialog_box, dialog_noise):
-        if abs(character.rect.centerx - self.Masir.rect.centerx) < 200:
+
+        if self.first_stage and character.state != 0:
+            self.cutscene = True
+            self.first_stage = False
+
+        if abs(character.rect.centerx - self.Masir.rect.centerx) < 150:
             self.cutscene = True
 
         if self.cutscene:
-            dialog("Testing to see if this works.", screen, dialog_font, dialog_box, dialog_noise, self.first_time)
+            dialog(self.dialog[self.i][0], self.dialog[self.i][1], screen, dialog_font, dialog_box, dialog_noise, self.first_time)
             self.first_time = False
 
             # Allow exiting the game during a cutscene.
@@ -777,13 +813,16 @@ class Map_01:
                          pg.quit()
                          sys.exit()
 
+                # Navigating cutscenes.
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    self.first_time = True
+                    self.i += 1
+                    if self.i == 2:
+                        self.cutscene = False
+
 
     def update(self, character, screen, dialog_font, dialog_box, dialog_noise):
         self.cutscene_event(character, screen, dialog_font, dialog_box, dialog_noise)
-
-
-
-
 
 
 
@@ -801,7 +840,7 @@ def main():
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Dialog")
     dialog_box = load_image('dialogue_box.png')
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
-    dialog_font = pg.freetype.Font('Old School Adventures.ttf', size = 18)
+    dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size = 24)
     dialog_noise = pg.mixer.Sound('chat_noise.wav')
 
     # Declare character sprites.
