@@ -7,10 +7,21 @@ import os
 from time import sleep
 import random
 
-# Quick function to load images.
+# Function to load images.
 def load_image(name):
     image = pg.image.load(name).convert_alpha()
     return image
+
+# Function to render and blit dialog.
+def dialog(text, screen, dialog_font, dialog_box, dialog_noise, first_time):
+    black = (0,0,0)
+    dialog_text, rect = dialog_font.render(text)
+    pg.draw.rect(screen, black, (0,0,1920,200))
+    pg.draw.rect(screen, black, (0,1000,1920,200))
+    screen.blit(dialog_box, (550,1000))
+    screen.blit(dialog_text, (600,1050))
+    if first_time:
+        dialog_noise.play()
 
 # Spritesheet class to split sprite sheets into proper single frames.
 class spritesheet(object):
@@ -180,7 +191,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         create fluid game controls.
     """
 
-    def handle_keys(self, time, cutscene):
+    def handle_keys(self, time):
         # Monitor held down keys. (movement)
         # If attack animation is not in progress, move in the direction of the pressed key.
         if self.attack == False:
@@ -268,9 +279,9 @@ class Fursa_sprite(pg.sprite.Sprite):
     # Must be fed the blockers of the current map.
     def update(self, blockers, time, enemy_sprites, cutscene):
 
-        # Disallow any key input if cutscene is in progress.
+        # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
         if cutscene is False:
-            self.handle_keys(time, cutscene)
+            self.handle_keys(time)
             self.change_state()
         else:
             self.state = 0
@@ -652,7 +663,7 @@ class enemy_frames():
 
 # -------------------------------------------------------NPCS-------------------------------------------------------------------
 class Masir_sprite(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, spawnx, spawny):
         super().__init__()
         self.frame_index = 0
         self.upload_frames()
@@ -665,9 +676,7 @@ class Masir_sprite(pg.sprite.Sprite):
         self.frame_speed = 300
         self.gravity_dt = 0
         self.fall_rate = 1
-
-
-        self.rect = pg.Rect((800, 0), (256, 198)) # Spawn point and collision size.
+        self.rect = pg.Rect((spawnx, spawny), (256, 198)) # Spawn point and collision size.
 
 
     def upload_frames(self):
@@ -730,7 +739,6 @@ class Masir_sprite(pg.sprite.Sprite):
                             self.fall_rate = 1
                             break
 
-
 # -------------------------------------------------------MAPS-------------------------------------------------------------------
 # Starting area. Stores map and music data.
 class Map_01:
@@ -742,35 +750,40 @@ class Map_01:
         #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
+        self.first_time = True
 
         # Declare npcs.
-        self.Masir = Masir_sprite()
+        self.Masir = Masir_sprite(800, 200)
         npc_sprites.add(self.Masir)
 
 
-    def cutscene_event(self, character):
+    def cutscene_event(self, character, screen, dialog_font, dialog_box, dialog_noise):
         if abs(character.rect.centerx - self.Masir.rect.centerx) < 200:
             self.cutscene = True
 
-        # Pygame event loop.
-        for event in pg.event.get():
-            # Allow to quit game. Included in this portion to be able to keep only one event loop.
-            if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
+        if self.cutscene:
+            dialog("Testing to see if this works.", screen, dialog_font, dialog_box, dialog_noise, self.first_time)
+            self.first_time = False
 
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_ESCAPE:
-                     pg.quit()
-                     sys.exit()
+            # Allow exiting the game during a cutscene.
+            for event in pg.event.get():
+                # Allow to quit game. Included in this portion to be able to keep only one event loop.
+                if event.type == pg.QUIT:
+                    pg.quit()
+                    sys.exit()
+
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                         pg.quit()
+                         sys.exit()
 
 
-    def update(self, character):
-        self.cutscene_event(character)
-        print(self.Masir.rect.centerx)
+    def update(self, character, screen, dialog_font, dialog_box, dialog_noise):
+        self.cutscene_event(character, screen, dialog_font, dialog_box, dialog_noise)
 
 
-    
+
+
 
 
 
@@ -788,9 +801,8 @@ def main():
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Dialog")
     dialog_box = load_image('dialogue_box.png')
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
-    dialog_font = pg.freetype.Font('NEOTERICc - Bold DEMO VERSION.ttf', size = 36)
-
-    dialog_text, rect = dialog_font.render('Hello, young one. I\'ve been expecting you for so long.')
+    dialog_font = pg.freetype.Font('Old School Adventures.ttf', size = 18)
+    dialog_noise = pg.mixer.Sound('chat_noise.wav')
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
@@ -848,10 +860,7 @@ def main():
         # Layer 5-------- Screen background front surface refresh.
         screen.blit(current_map.map.front_surface, (0,0))
 
-        screen.blit(dialog_box, (200,100))
-        screen.blit(dialog_text, (300,150))
-
-        current_map.update(Fursa)
+        current_map.update(Fursa, screen, dialog_font, dialog_box, dialog_noise)
 
 
         clock.tick(90) # Framerate.
