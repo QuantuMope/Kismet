@@ -1,15 +1,11 @@
 import pygame as pg
+import pygame.freetype
 import pytmx
 from pytmx.util_pygame import load_pygame
 import sys
 import os
 from time import sleep
 import random
-
-""" For Fursa class, due to the length, separate functions within the class are
-    separated by teal dashed lines as shown below."""
-    #----------------------------------------------------
-
 
 # Quick function to load images.
 def load_image(name):
@@ -85,7 +81,7 @@ class TiledMap:
         self.render(self.back_surface, self.front_surface)
         return self.back_surface, self.front_surface
 
-# ----------------------------------------------------PLAYER-------------------------------------------------------------------
+# ----------------------------------------------------PLAYERS-------------------------------------------------------------------
 # Fursa sprite. The main character of the game.
 class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
@@ -118,7 +114,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
 
-#-------------------------------------------------------------------------------------------------------------------------------
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     # Created separately for organizational purposes.
     def upload_frames(self):
@@ -152,7 +147,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Create a list of number of frames for each animation.
         self.frame_maxes = [len(images) for images in self.all_images]
 
-#-------------------------------------------------------------------------------------------------------------------------------
     # Function that changes Fursa's animation depending on the action performed.
     # Continuously called in self.update().
     def change_state(self):
@@ -176,7 +170,6 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.frame_speed = 200
 
         self.current_images = self.all_images[self.state]
-#-------------------------------------------------------------------------------------------------------------------------------
 
     """
         Function that handles Fursa's key inputs. Called in update().
@@ -187,8 +180,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         create fluid game controls.
     """
 
-    def handle_keys(self, time):
-
+    def handle_keys(self, time, cutscene):
         # Monitor held down keys. (movement)
         # If attack animation is not in progress, move in the direction of the pressed key.
         if self.attack == False:
@@ -271,15 +263,19 @@ class Fursa_sprite(pg.sprite.Sprite):
                         self.jump_rate = 20
                         self.jump_index = 0
                         break
-#-------------------------------------------------------------------------------------------------------------------------------
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
-    def update(self, blockers, time, enemy_sprites):
+    def update(self, blockers, time, enemy_sprites, cutscene):
 
-        # Previous functions.
-        self.handle_keys(time)
-        self.change_state()
+        # Disallow any key input if cutscene is in progress.
+        if cutscene is False:
+            self.handle_keys(time, cutscene)
+            self.change_state()
+        else:
+            self.state = 0
+            self.frame_speed = 200
+            self.current_images = self.all_images[self.state]
 
         """
             Cycle through frames depending on self.frame_speed that is set in self.change_state().
@@ -288,6 +284,7 @@ class Fursa_sprite(pg.sprite.Sprite):
             If the direction that Fursa is facing has changed before a frame can be refreshed,
             bypasses frame timer and resets the to avoid Fursa momentarily moving facing the wrong direction.
         """
+
 
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
@@ -653,21 +650,128 @@ class enemy_frames():
             scaled_frames = [pg.transform.scale(ss_sep[e], sizes[i]) for e in range(0, len(ss_sep))]
             self.skeleton_frames.append(scaled_frames)
 
+# -------------------------------------------------------NPCS-------------------------------------------------------------------
+class Masir_sprite(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.frame_index = 0
+        self.upload_frames()
+        self.current_images = self.all_images[0]
+        self.image = self.current_images[0]
+        self.state = 0
+        self.facing_right = True
+        self.frame_override = True
+        self.frame_dt = 0
+        self.frame_speed = 300
+        self.gravity_dt = 0
+        self.fall_rate = 1
+
+
+        self.rect = pg.Rect((800, 0), (256, 198)) # Spawn point and collision size.
+
+
+    def upload_frames(self):
+        idle_images = []
+        walk_images = []
+        action_images = []
+
+        # State IDs
+        #-----------------------0-------------1------------2----------
+        self.all_images = [idle_images, walk_images, action_images]
+
+        directories =           ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Masir/Idle_Png"       # Idle animation.
+                                ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Masir/Walk_Png"       # Walk animation.
+                                ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Masir/Action_Png"]    # Action animation.
+
+
+        # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
+        for i, directory in enumerate(directories):
+            os.chdir(directory)
+            for file in os.listdir(directory):
+                self.all_images[i].append(pg.transform.scale(load_image(file), (256, 256)))
+
+        # Create a list of number of frames for each animation.
+        self.frame_maxes = [len(images) for images in self.all_images]
+
+    def change_state(self):
+        self.current_images = self.all_images[self.state]
+        return
+
+    def update(self, blockers, time):
+        if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
+            self.frame_dt = time
+
+            if self.facing_right:
+                self.image = self.current_images[self.frame_index]
+                self.frame_index += 1
+                self.frame_override = True
+            else:
+                self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
+                self.frame_index += 1
+                self.frame_override = False
+
+            if self.frame_index == self.frame_maxes[self.state]:
+                self.frame_index = 0
+
+        for block in blockers:
+        # Checks to see if Fursa is in contact with the ground.
+            if self.rect.colliderect(block):
+                pass
+            else:
+                # If not in contact with the ground, accelerates falling down every 20 ms.
+                # Gravity is disabled when a jump animation is in progress.
+                if (time - self.gravity_dt) >= 20:
+                    self.gravity_dt = time
+                    self.fall_rate *= 1.1 # Acceleration rate.
+                    for i in range(int(self.fall_rate)):
+                        self.rect.y += 1
+                        # Halts falling when Fursa lands on a block.
+                        if self.rect.colliderect(block):
+                            self.fall_rate = 1
+                            break
+
+
+# -------------------------------------------------------MAPS-------------------------------------------------------------------
 # Starting area. Stores map and music data.
 class Map_01:
-    def __init__(self):
+    def __init__(self, npc_sprites):
+        # Map graphics and music.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
         self.music = pg.mixer.music.load('301 - Good Memories.mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
+        #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
+        self.cutscene = False
+
+        # Declare npcs.
+        self.Masir = Masir_sprite()
+        npc_sprites.add(self.Masir)
 
 
-    def dialog(self):
-        return
+    def cutscene_event(self, character):
+        if abs(character.rect.centerx - self.Masir.rect.centerx) < 200:
+            self.cutscene = True
 
-    def update(self):
-        return
+        # Pygame event loop.
+        for event in pg.event.get():
+            # Allow to quit game. Included in this portion to be able to keep only one event loop.
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                     pg.quit()
+                     sys.exit()
+
+
+    def update(self, character):
+        self.cutscene_event(character)
+        print(self.Masir.rect.centerx)
+
+
+    
+
 
 
 # Game Start.
@@ -681,16 +785,20 @@ def main():
     screen = pg.display.set_mode(size, pg.FULLSCREEN)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
+    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Dialog")
     dialog_box = load_image('dialogue_box.png')
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
+    dialog_font = pg.freetype.Font('NEOTERICc - Bold DEMO VERSION.ttf', size = 36)
 
-    # Declare Maps.
-    Starting_Area = Map_01()
+    dialog_text, rect = dialog_font.render('Hello, young one. I\'ve been expecting you for so long.')
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
     character_sprites = pg.sprite.Group()
     character_sprites.add(Fursa)
+
+    # Declare npc sprites.
+    npc_sprites = pg.sprite.Group()
 
     # Declare enemy sprites.
     enemy_images = enemy_frames()
@@ -708,6 +816,11 @@ def main():
     particle_sprites = pg.sprite.Group()
     particle_sprites.add(blast_particle)
 
+    # Declare Maps.
+    Starting_Area = Map_01(npc_sprites)
+    maps = [Starting_Area]
+    current_map = maps[0]
+
     # Game Loop
     while True:
 
@@ -715,26 +828,30 @@ def main():
         # Surfaces are blit and updated in order of back to front on screen.
 
         # Layer 1-------- Screen background back surface refresh.
-        screen.blit(Starting_Area.map.back_surface, (0,0))
+        screen.blit(current_map.map.back_surface, (0,0))
 
         # Layer 2-------- Particle sprites update.
         particle_sprites.update(Fursa, particle_sprites, enemy_sprites)
         particle_sprites.draw(screen)
 
         # Layer 3-------- Character sprites update.
-        character_sprites.update(Starting_Area.map.blockers, time, enemy_sprites)
+        character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene)
         character_sprites.draw(screen)
 
+        npc_sprites.update(current_map.map.blockers, time)
+        npc_sprites.draw(screen)
+
         # Layer 4-------- Enemy sprites update.
-        enemy_sprites.update(Starting_Area.map.blockers, time, Fursa, particle_sprites)
-        enemy_sprites.draw(screen)
+        #enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
+        #enemy_sprites.draw(screen)
 
         # Layer 5-------- Screen background front surface refresh.
-        screen.blit(Starting_Area.map.front_surface, (0,0))
+        screen.blit(current_map.map.front_surface, (0,0))
 
-        #screen.blit(dialog_box, (200,100))
+        screen.blit(dialog_box, (200,100))
+        screen.blit(dialog_text, (300,150))
 
-
+        current_map.update(Fursa)
 
 
         clock.tick(90) # Framerate.
