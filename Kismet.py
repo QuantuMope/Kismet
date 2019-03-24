@@ -12,36 +12,6 @@ def load_image(name):
     image = pg.image.load(name).convert_alpha()
     return image
 
-# Function to render and blit dialog.
-def dialog(text, name, screen, dialog_font, dialog_box, dialog_noise, first_time):
-    black = (0,0,0)
-    pg.draw.rect(screen, black, (0,0,1920,200))
-    pg.draw.rect(screen, black, (0,1000,1920,200))
-    screen.blit(dialog_box, (550,1000))
-
-    if len(text) > 50:
-        i = 50
-        while text[i] != ' ':
-            i += 1
-        if i > 52:
-            i = 50
-            while text[i] != ' ':
-                i -= 1
-        new_text = [text[0:i], text[i+1:]]
-        for i, line in enumerate(new_text):
-            dialog_text, rect1 = dialog_font.render(line)
-            screen.blit(dialog_text, (600, 1075 + 50 * i))
-    else:
-        dialog_text, rect1 = dialog_font.render(text)
-        screen.blit(dialog_text, (600,1075))
-
-
-    name_text, rect2 = dialog_font.render(name)
-    screen.blit(name_text, (600,1025))
-
-    if first_time:
-        dialog_noise.play()
-
 # Spritesheet class to split sprite sheets into proper single frames.
 class spritesheet(object):
     def __init__(self, filename):
@@ -761,15 +731,18 @@ class Masir_sprite(pg.sprite.Sprite):
 # -------------------------------------------------------MAPS-------------------------------------------------------------------
 # Starting area. Stores map and music data.
 class Map_01:
-    def __init__(self, npc_sprites):
+    def __init__(self, npc_sprites, dialog_package):
         # Map graphics and music.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
+        #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
         self.first_time = True
+        self.dialog_box = dialog_package[0]
+        self.dialog_font = dialog_package[1]
+        self.dialog_noise = dialog_package[2]
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 720)
@@ -777,7 +750,9 @@ class Map_01:
 
         # Dialog dictionary.
         self.i = 0
-        self.dialog = {                0: ["Where am I?",   'Boy'],
+        self.e = 0
+        self.a = 0
+        self.script = {                0: ["Where am I?",   'Boy'],
                                        1: ["... Who am I?", 'Boy'],
                                        2: ["So you\'ve awakened, my child.", '???'],
                                        3: ["Do you know me?", 'Boy'],
@@ -788,7 +763,47 @@ class Map_01:
         self.first_stage = True
 
 
-    def cutscene_event(self, character, screen, dialog_font, dialog_box, dialog_noise):
+    # Function to render and blit dialog.
+    def dialog(self, text, name, screen):
+        black = (0,0,0)
+        pg.draw.rect(screen, black, (0,0,1920,200))
+        pg.draw.rect(screen, black, (0,1000,1920,200))
+        screen.blit(self.dialog_box, (550,1000))
+        load_text = ''
+        if self.first_time:
+            #self.dialog_noise.play()
+            self.e = 0
+            self.a = 0
+
+        if len(text) > 50:
+            i = 50
+            while text[i] != ' ':
+                i += 1
+            if i > 52:
+                i = 50
+                while text[i] != ' ':
+                    i -= 1
+            new_text = [text[0:i], text[i+1:]]
+            load_text_1 = new_text[0][0:self.e]
+            load_text_2 = new_text[1][0:self.a]
+            dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
+            dialog_text_2, rect_2 = self.dialog_font.render(load_text_2)
+            screen.blit(dialog_text_1, (600, 1075))
+            screen.blit(dialog_text_2, (600, 1125))
+            self.e += 1
+            if self.e >= i:
+                self.a += 1
+
+        else:
+            load_text_1 = text[0:self.e]
+            dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
+            screen.blit(dialog_text_1, (600,1075))
+            self.e += 1
+
+        name_text, rect_3 = self.dialog_font.render(name)
+        screen.blit(name_text, (600,1025))
+
+    def cutscene_event(self, character, screen):
 
         if self.first_stage and character.state != 0:
             self.cutscene = True
@@ -798,7 +813,7 @@ class Map_01:
             self.cutscene = True
 
         if self.cutscene:
-            dialog(self.dialog[self.i][0], self.dialog[self.i][1], screen, dialog_font, dialog_box, dialog_noise, self.first_time)
+            self.dialog(self.script[self.i][0], self.script[self.i][1], screen)
             self.first_time = False
 
             # Allow exiting the game during a cutscene.
@@ -821,8 +836,8 @@ class Map_01:
                         self.cutscene = False
 
 
-    def update(self, character, screen, dialog_font, dialog_box, dialog_noise):
-        self.cutscene_event(character, screen, dialog_font, dialog_box, dialog_noise)
+    def update(self, character, screen):
+        self.cutscene_event(character, screen)
 
 
 
@@ -842,6 +857,7 @@ def main():
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
     dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size = 24)
     dialog_noise = pg.mixer.Sound('chat_noise.wav')
+    dialog_package = [dialog_box, dialog_font, dialog_noise]
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
@@ -868,7 +884,7 @@ def main():
     particle_sprites.add(blast_particle)
 
     # Declare Maps.
-    Starting_Area = Map_01(npc_sprites)
+    Starting_Area = Map_01(npc_sprites, dialog_package)
     maps = [Starting_Area]
     current_map = maps[0]
 
@@ -899,7 +915,7 @@ def main():
         # Layer 5-------- Screen background front surface refresh.
         screen.blit(current_map.map.front_surface, (0,0))
 
-        current_map.update(Fursa, screen, dialog_font, dialog_box, dialog_noise)
+        current_map.update(Fursa, screen)
 
 
         clock.tick(90) # Framerate.
