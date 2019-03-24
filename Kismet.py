@@ -666,6 +666,7 @@ class Masir_sprite(pg.sprite.Sprite):
         self.gravity_dt = 0
         self.fall_rate = 1
         self.rect = pg.Rect((spawnx, spawny), (256, 198)) # Spawn point and collision size.
+        self.attack = False
 
 
     def upload_frames(self):
@@ -692,10 +693,16 @@ class Masir_sprite(pg.sprite.Sprite):
         self.frame_maxes = [len(images) for images in self.all_images]
 
     def change_state(self):
+        if self.attack:
+            self.state = 2
+            self.frame_speed = 150
+        else:
+            self.state = 0
+            self.frame_speed = 300
         self.current_images = self.all_images[self.state]
-        return
 
     def update(self, blockers, time):
+        self.change_state()
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
 
@@ -709,6 +716,7 @@ class Masir_sprite(pg.sprite.Sprite):
                 self.frame_override = False
 
             if self.frame_index == self.frame_maxes[self.state]:
+                self.attack = False
                 self.frame_index = 0
 
         for block in blockers:
@@ -736,20 +744,35 @@ class Map_01:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
         self.map = TiledMap('Starting_Area.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
-        #pg.mixer.music.play(loops = -1, start = 0.0)
+        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
-        self.first_time = True
-        self.dialog_box = dialog_package[0]
-        self.dialog_font = dialog_package[1]
-        self.dialog_noise = dialog_package[2]
+        self.first_stage = True
+        self.event = 0
+        coordinates = []
+
+        # Portal animation.
+        for i in range(0,7):
+            coordinates.extend([(100 * e, 100 * i, 100, 100) for e in range(0, 8)])
+        coordinates.extend([(100 * e, 700, 100, 100) for e in range(0, 5)])
+
+        portal_images_ss = spritesheet('12_nebula_spritesheet.png')
+        portal_images_separate = portal_images_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        self.portal_images = [pg.transform.scale(portal_images_separate[i], (160, 160)) for i in range(0, len(portal_images_separate))]
+        self.p_index = 0
+        self.portal_start = False
+        self.portal_noise = pg.mixer.Sound('portal_noise.wav')
+
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 720)
         npc_sprites.add(self.Masir)
 
         # Dialog dictionary.
-        self.i = 0
+        self.dialog_start = True
+        self.dialog_box = dialog_package[0]
+        self.dialog_font = dialog_package[1]
+        self.dialog_noise = dialog_package[2]
         self.e = 0
         self.a = 0
         self.script = {                0: ["Where am I?",   'Boy'],
@@ -760,18 +783,19 @@ class Map_01:
                                        5: ["Well that seems to have answered my question. Would you be so kind as to tell me my name?", 'Boy'],
                                        6: ["Your name is Fursa, son of Chaos. Please follow me, as we have much to accomplish.", '???']}
 
-        self.first_stage = True
 
-
-    # Function to render and blit dialog.
-    def dialog(self, text, name, screen):
+    def black_edges(self, screen):
         black = (0,0,0)
         pg.draw.rect(screen, black, (0,0,1920,200))
         pg.draw.rect(screen, black, (0,1000,1920,200))
+
+    # Function to render and blit dialog.
+    def dialog(self, text, name, screen):
+        self.black_edges(screen)
         screen.blit(self.dialog_box, (550,1000))
         load_text = ''
-        if self.first_time:
-            #self.dialog_noise.play()
+        if self.dialog_start:
+            self.dialog_noise.play()
             self.e = 0
             self.a = 0
 
@@ -783,6 +807,7 @@ class Map_01:
                 i = 50
                 while text[i] != ' ':
                     i -= 1
+
             new_text = [text[0:i], text[i+1:]]
             load_text_1 = new_text[0][0:self.e]
             load_text_2 = new_text[1][0:self.a]
@@ -813,8 +838,27 @@ class Map_01:
             self.cutscene = True
 
         if self.cutscene:
-            self.dialog(self.script[self.i][0], self.script[self.i][1], screen)
-            self.first_time = False
+            if self.event < 7:
+                self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
+                self.dialog_start = False
+            elif self.event == 7:
+                self.Masir.attack = True
+                self.event += 1
+                self.black_edges(screen)
+            else:
+                self.black_edges(screen)
+
+            if self.Masir.attack is True:
+                if self.Masir.frame_index == 16:
+                    self.portal_start = True
+                if self.Masir.frame_index == 4:
+                    self.portal_noise.play()
+
+            if self.portal_start is True:
+                screen.blit(self.portal_images[self.p_index], (1115,780))
+                self.p_index += 1
+                if self.p_index == len(self.portal_images):
+                    self.p_index = 0
 
             # Allow exiting the game during a cutscene.
             for event in pg.event.get():
@@ -830,9 +874,9 @@ class Map_01:
 
                 # Navigating cutscenes.
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    self.first_time = True
-                    self.i += 1
-                    if self.i == 2:
+                    self.dialog_start = True
+                    self.event += 1
+                    if self.event == 2:
                         self.cutscene = False
 
 
