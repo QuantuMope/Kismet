@@ -90,6 +90,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.upload_frames() # Uploads all frames. Function found below.
         self.current_images = self.all_images[0]
         self.image = self.current_images[0]
+        self.prev_state = 0
         self.state = 0
         self.facing_right = True
         self.frame_override = True
@@ -153,6 +154,8 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         # Each frame list has a state ID that can be found outlined in self.upload_frames().
         # Each animation type has its own fps.
+        self.prev_state = self.state
+
         if self.hit:
             self.state = 6
             self.frame_speed = 25
@@ -170,6 +173,10 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.frame_speed = 200
 
         self.current_images = self.all_images[self.state]
+
+        if self.prev_state != self.state:
+            self.frame_index = 0
+            print('works')
 
     """
         Function that handles Fursa's key inputs. Called in update().
@@ -289,6 +296,13 @@ class Fursa_sprite(pg.sprite.Sprite):
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
 
+            # Resets frame index if the max for a certain animation is reached.
+            # Also, sets attack animation back to False in case the action was an attack.
+            if self.frame_index == self.frame_maxes[self.state]:
+                self.attack = False
+                self.hit = False
+                self.frame_index = 0
+
             if self.facing_right:
                 self.image = self.current_images[self.frame_index]
                 self.frame_index += 1
@@ -298,17 +312,11 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.frame_index += 1
                 self.frame_override = False
 
-            # Resets frame index if the max for a certain animation is reached.
-            # Also, sets attack animation back to False in case the action was an attack.
-            if self.frame_index == self.frame_maxes[self.state]:
-                self.attack = False
-                self.hit = False
-                self.frame_index = 0
-
             # Play attack noise at the correct frame.
             if self.attack == True and self.frame_index == 8:
                 self.attack_noise.play()
 
+        # Enemy collision detection.
         for enemy in enemy_sprites:
             if enemy.attack and enemy.frame_index == 7:
                 if self.rect.collidepoint(enemy.rect.x + 50, enemy.rect.centery + 20):
@@ -695,7 +703,7 @@ class Masir_sprite(pg.sprite.Sprite):
     def change_state(self):
         if self.attack:
             self.state = 2
-            self.frame_speed = 150
+            self.frame_speed = 125
         else:
             self.state = 0
             self.frame_speed = 300
@@ -761,7 +769,10 @@ class Map_01:
         self.portal_images = [pg.transform.scale(portal_images_separate[i], (160, 160)) for i in range(0, len(portal_images_separate))]
         self.p_index = 0
         self.portal_start = False
-        self.portal_noise = pg.mixer.Sound('portal_noise.wav')
+        self.portal_blast = pg.mixer.Sound('portal_noise.wav')
+        self.portal_aura = pg.mixer.Sound('portal_aura_noise.wav')
+        self.portal_blast_start = True
+        self.portal_aura_start = True
 
 
         # Declare npcs.
@@ -851,8 +862,12 @@ class Map_01:
             if self.Masir.attack is True:
                 if self.Masir.frame_index == 16:
                     self.portal_start = True
-                if self.Masir.frame_index == 4:
-                    self.portal_noise.play()
+                    if self.portal_aura_start:
+                        self.portal_aura.play(loops = -1)
+                        self.portal_aura_start = False
+                if self.Masir.frame_index == 3 and self.portal_blast_start:
+                    self.portal_blast.play()
+                    self.portal_blast_start = False
 
             if self.portal_start is True:
                 screen.blit(self.portal_images[self.p_index], (1115,780))
@@ -889,7 +904,7 @@ class Map_01:
 def main():
 
     # Game parameters.
-    pg.mixer.pre_init(44100, -16, 2, 512)
+    pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
     size = width, height = 1920, 1200
