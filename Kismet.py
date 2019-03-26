@@ -94,7 +94,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((400, 820), (128, 102)) # Spawn point and collision size.
+        self.rect = pg.Rect((400, 600), (128, 102)) # Spawn point and collision size.
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -176,7 +176,6 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         if self.prev_state != self.state:
             self.frame_index = 0
-            print('works')
 
     """
         Function that handles Fursa's key inputs. Called in update().
@@ -675,6 +674,7 @@ class Masir_sprite(pg.sprite.Sprite):
         self.fall_rate = 1
         self.rect = pg.Rect((spawnx, spawny), (256, 198)) # Spawn point and collision size.
         self.attack = False
+        self.walk = False
 
 
     def upload_frames(self):
@@ -704,9 +704,13 @@ class Masir_sprite(pg.sprite.Sprite):
         if self.attack:
             self.state = 2
             self.frame_speed = 125
+        elif self.walk:
+            self.state = 1
+            self.frame_speed = 200
         else:
             self.state = 0
             self.frame_speed = 300
+
         self.current_images = self.all_images[self.state]
 
     def update(self, blockers, time):
@@ -750,13 +754,14 @@ class Map_01:
     def __init__(self, npc_sprites, dialog_package):
         # Map graphics and music.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
-        self.map = TiledMap('Starting_Area.tmx')
+        self.map = TiledMap('Map_01_1920x1080.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
         pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
         self.first_stage = True
         self.event = 0
+        self.Masir_dead = False
         coordinates = []
 
         # Portal animation.
@@ -776,7 +781,7 @@ class Map_01:
 
 
         # Declare npcs.
-        self.Masir = Masir_sprite(800, 720)
+        self.Masir = Masir_sprite(800, 600)
         npc_sprites.add(self.Masir)
 
         # Dialog dictionary.
@@ -789,21 +794,26 @@ class Map_01:
         self.script = {                0: ["Where am I?",   'Boy'],
                                        1: ["... Who am I?", 'Boy'],
                                        2: ["So you\'ve awakened, my child.", '???'],
-                                       3: ["Do you know me?", 'Boy'],
-                                       4: ["It seems you\'ve lost more of your memory than I would have liked.", '???'],
-                                       5: ["Well that seems to have answered my question. Would you be so kind as to tell me my name?", 'Boy'],
-                                       6: ["Your name is Fursa, son of Chaos. Please follow me, as we have much to accomplish.", '???']}
+                                       3: ["... Do you know me?", 'Boy'],
+                                       4: ["... It seems you\'ve lost more of your memory than I would have liked.", '???'],
+                                       5: ["Please explain. I'm so confused. Who am I?", 'Boy'],
+                                       6: ["Your name is Fursa. You are the son of Chaos.", '???'],
+                                      #7 is Masir portal scene.
+                                       8: ["In the ancient tongue, your name means... chance.", '???'],
+                                       9: ["Please follow me, as we have much to accomplish.", '???'],
+                                       10:["Wait. What is your name?", 'Fursa'],
+                                       11:["You may call me Masir, little one.", 'Masir']}
 
 
     def black_edges(self, screen):
         black = (0,0,0)
         pg.draw.rect(screen, black, (0,0,1920,200))
-        pg.draw.rect(screen, black, (0,1000,1920,200))
+        pg.draw.rect(screen, black, (0,880,1920,200))
 
     # Function to render and blit dialog.
     def dialog(self, text, name, screen):
         self.black_edges(screen)
-        screen.blit(self.dialog_box, (550,1000))
+        screen.blit(self.dialog_box, (550,880))
         load_text = ''
         if self.dialog_start:
             self.dialog_noise.play()
@@ -824,8 +834,8 @@ class Map_01:
             load_text_2 = new_text[1][0:self.a]
             dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
             dialog_text_2, rect_2 = self.dialog_font.render(load_text_2)
-            screen.blit(dialog_text_1, (600, 1075))
-            screen.blit(dialog_text_2, (600, 1125))
+            screen.blit(dialog_text_1, (600, 955))
+            screen.blit(dialog_text_2, (600, 1005))
             self.e += 1
             if self.e >= i:
                 self.a += 1
@@ -833,11 +843,11 @@ class Map_01:
         else:
             load_text_1 = text[0:self.e]
             dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
-            screen.blit(dialog_text_1, (600,1075))
+            screen.blit(dialog_text_1, (600,955))
             self.e += 1
 
         name_text, rect_3 = self.dialog_font.render(name)
-        screen.blit(name_text, (600,1025))
+        screen.blit(name_text, (600,905))
 
     def cutscene_event(self, character, screen):
 
@@ -846,7 +856,8 @@ class Map_01:
             self.first_stage = False
 
         if abs(character.rect.centerx - self.Masir.rect.centerx) < 150:
-            self.cutscene = True
+            if self.Masir_dead is False:
+                self.cutscene = True
 
         if self.cutscene:
             if self.event < 7:
@@ -855,6 +866,13 @@ class Map_01:
             elif self.event == 7:
                 self.Masir.attack = True
                 self.event += 1
+                self.black_edges(screen)
+            elif self.Masir.attack is False and self.event < 12:
+                self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
+                self.dialog_start = False
+            elif self.event == 12:
+                self.Masir.walk = True
+                self.Masir.rect.x += 1
                 self.black_edges(screen)
             else:
                 self.black_edges(screen)
@@ -869,11 +887,10 @@ class Map_01:
                     self.portal_blast.play()
                     self.portal_blast_start = False
 
-            if self.portal_start is True:
-                screen.blit(self.portal_images[self.p_index], (1115,780))
-                self.p_index += 1
-                if self.p_index == len(self.portal_images):
-                    self.p_index = 0
+            if self.Masir.rect.centerx == 1200:
+                self.Masir.kill()
+                self.cutscene = False
+                self.Masir_dead = True
 
             # Allow exiting the game during a cutscene.
             for event in pg.event.get():
@@ -894,6 +911,14 @@ class Map_01:
                     if self.event == 2:
                         self.cutscene = False
 
+        if self.portal_start is True:
+            screen.blit(self.portal_images[self.p_index], (1115,660))
+            self.p_index += 1
+            if self.p_index == len(self.portal_images):
+                self.p_index = 0
+
+        #if character.rect.centerx == 1200 and event.
+
 
     def update(self, character, screen):
         self.cutscene_event(character, screen)
@@ -907,7 +932,7 @@ def main():
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
-    size = width, height = 1920, 1200
+    size = width, height = 1920,1080
     screen = pg.display.set_mode(size, pg.FULLSCREEN)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
@@ -917,6 +942,8 @@ def main():
     dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size = 24)
     dialog_noise = pg.mixer.Sound('chat_noise.wav')
     dialog_package = [dialog_box, dialog_font, dialog_noise]
+    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fonts")
+    fps_font = pg.freetype.Font('digital-7.ttf', size = 48)
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
@@ -976,9 +1003,9 @@ def main():
 
         current_map.update(Fursa, screen)
 
-
         clock.tick(90) # Framerate.
-        #print(clock)
+        fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
+        screen.blit(fps_text, (1860, 10))
 
         pg.display.flip()
 
