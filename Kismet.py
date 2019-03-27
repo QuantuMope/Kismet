@@ -76,9 +76,12 @@ class TiledMap:
                     self.blockers.append(new_rect)
 
     def make_map(self):
-        self.back_surface = pg.Surface((self.width, self.height)).convert()
-        self.front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32).convert_alpha()
-        self.render(self.back_surface, self.front_surface)
+        self.pre_back_surface = pg.Surface((self.width, self.height)).convert()
+        self.pre_front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32).convert_alpha()
+        print(self.height)
+        self.render(self.pre_back_surface, self.pre_front_surface)
+        self.back_surface = self.pre_back_surface.subsurface((0,0,1920,1080))
+        self.front_surface = self.pre_front_surface.subsurface((0,0,1920,1080))
         return self.back_surface, self.front_surface
 
 # ----------------------------------------------------PLAYERS-------------------------------------------------------------------
@@ -248,6 +251,7 @@ class Fursa_sprite(pg.sprite.Sprite):
 
             # Frame reset when key is no longer held down. Self.key_pressed set to False to change state to idle.
             elif event.type == pg.KEYUP and self.attack == False:
+                print('works')
                 self.frame_index = 0
                 self.key_pressed = False
 
@@ -932,7 +936,7 @@ def main():
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
-    size = width, height = 1920,1080
+    size = width, height = 1920,1088
     screen = pg.display.set_mode(size, pg.FULLSCREEN)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
