@@ -78,10 +78,15 @@ class TiledMap:
     def make_map(self):
         self.pre_back_surface = pg.Surface((self.width, self.height)).convert()
         self.pre_front_surface = pg.Surface((self.width, self.height), pg.SRCALPHA, 32).convert_alpha()
-        print(self.height)
         self.render(self.pre_back_surface, self.pre_front_surface)
-        self.back_surface = self.pre_back_surface.subsurface((0,0,1920,1080))
-        self.front_surface = self.pre_front_surface.subsurface((0,0,1920,1080))
+        # self.back_surface = self.pre_back_surface.subsurface((0,0,1920,1080))
+        # self.front_surface = self.pre_front_surface.subsurface((0,0,1920,1080))
+        # self.back_surface = pg.Surface((self.width, 1080)).convert()
+        # self.front_surface = pg.Surface((self.width, 1080), pg.SRCALPHA, 32).convert_alpha()
+        # self.back_surface.blit(self.back_surface_x, (0,0))
+        # self.front_surface.blit(self.front_surface_x, (0,0))
+        self.back_surface = self.pre_back_surface
+        self.front_surface = self.pre_front_surface
         return self.back_surface, self.front_surface
 
 # ----------------------------------------------------PLAYERS-------------------------------------------------------------------
@@ -97,7 +102,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((400, 600), (128, 102)) # Spawn point and collision size.
+        self.rect = pg.Rect((200, 400), (128, 128)) # Spawn point and collision size.
+        self.rect.inflate_ip(-50, -24)
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -111,12 +117,17 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.frame_speed = 200
         self.hit = False
         self.hp = 3
+        self.map_forward = False
 
         # Load sound effects.
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa")
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa")
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
+        self.walk_dirt = pg.mixer.Sound("stepdirt_1.wav")
+        self.walk_dirt.set_volume(0.1)
+        self.walking = False
+        self.on_ground = False
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     # Created separately for organizational purposes.
@@ -133,12 +144,12 @@ class Fursa_sprite(pg.sprite.Sprite):
         #-----------------------0------------1------------2------------3--------------4--------------5-----------6-------#
         self.all_images = [idle_images, walk_images, run_images, attack_images, shield_images, death_images, hit_images]
 
-        directories =      ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Idle"          # Idle animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Walk"          # Walking animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Run"           # Run animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Attack_01"     # Attack animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Attack_02"     # Shield animation.
-                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa/Death"]        # Hit & Death animation.
+        directories =      ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa/Idle"          # Idle animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa/Walk"          # Walking animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa/Run"           # Run animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa/Attack_01"     # Attack animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa/Attack_02"     # Shield animation.
+                           ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa/Death"]        # Hit & Death animation.
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):
@@ -162,18 +173,23 @@ class Fursa_sprite(pg.sprite.Sprite):
         if self.hit:
             self.state = 6
             self.frame_speed = 25
+            self.walking = False
         elif self.attack:
             self.state = 3
             self.frame_speed = 75
+            self.walking = False
         elif self.key_pressed and self.shift:
             self.state = 2
             self.frame_speed = 100
+            self.walking = True
         elif self.key_pressed:
             self.state = 1
             self.frame_speed = 150
+            self.walking = True
         else:
             self.state = 0
             self.frame_speed = 200
+            self.walking = False
 
         self.current_images = self.all_images[self.state]
 
@@ -189,19 +205,15 @@ class Fursa_sprite(pg.sprite.Sprite):
         create fluid game controls.
     """
 
-    def handle_keys(self, time):
+    def handle_keys(self, time, map):
         # Monitor held down keys. (movement)
         # If attack animation is not in progress, move in the direction of the pressed key.
         if self.attack == False:
             keys = pg.key.get_pressed()
-            if keys[pg.K_w]:
-                self.rect.y -= self.speed
             if keys[pg.K_d]:
                 self.rect.x += self.speed
                 self.key_pressed = True  # Self.key_pressed() is fed back to change_state(). Found several times throughout handle_keys().
-            if keys[pg.K_s]:
-                self.rect.y += self.speed
-            if keys[pg.K_a]:
+            elif keys[pg.K_a]:
                 self.rect.x -= self.speed
                 self.key_pressed = True
             # Running changes speed by holding down shift.
@@ -231,19 +243,27 @@ class Fursa_sprite(pg.sprite.Sprite):
                 # Registers which way Fursa should be facing. Fed to self.update().
                 if event.key == pg.K_d:
                     self.facing_right = True
-                if event.key == pg.K_a:
+                    self.walking = True
+                elif event.key == pg.K_a:
                     self.facing_right = False
+                    self.walking = True
+
+
 
                 # Enables attack animation.
                 # Self.attack set to True prevents other key inputs to be registered until the animation is completed.
-                if event.key == pg.K_r:
+                elif event.key == pg.K_r:
                     self.attack = True
                     self.attack_charge.play()
 
                 # Jump input.
-                if event.key == pg.K_SPACE:
+                elif event.key == pg.K_SPACE:
                     self.jump_noise.play()
                     self.jump = True    # ----------------> Jump starts.
+
+                elif event.key == pg.K_w:
+                    if self.rect.collidepoint(map.portal_rect.centerx, map.portal_rect.centery):
+                        self.map_forward = True
 
                 if event.key == pg.K_ESCAPE:
                      pg.quit()
@@ -251,7 +271,6 @@ class Fursa_sprite(pg.sprite.Sprite):
 
             # Frame reset when key is no longer held down. Self.key_pressed set to False to change state to idle.
             elif event.type == pg.KEYUP and self.attack == False:
-                print('works')
                 self.frame_index = 0
                 self.key_pressed = False
 
@@ -276,11 +295,11 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
-    def update(self, blockers, time, enemy_sprites, cutscene):
+    def update(self, blockers, time, enemy_sprites, cutscene, map):
 
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
         if cutscene is False:
-            self.handle_keys(time)
+            self.handle_keys(time, map)
             self.change_state()
         else:
             self.state = 0
@@ -319,6 +338,10 @@ class Fursa_sprite(pg.sprite.Sprite):
             if self.attack == True and self.frame_index == 8:
                 self.attack_noise.play()
 
+            # if self.walking:
+            #     if self.frame_index == 3 or self.frame_index == 8:
+            #         self.walk_dirt.play()
+
         # Enemy collision detection.
         for enemy in enemy_sprites:
             if enemy.attack and enemy.frame_index == 7:
@@ -327,27 +350,31 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.hp -= 1
                     self.hit = True
 
-            # elif self.flow_right is False:
-            #     if self.rect.collidepoint(enemy.rect.x + 20, enemy.rect.centery + 20):
-            #         self.particle_hit = True
-
         # Gravity emulation with current map blockers.
         for block in blockers:
             # Checks to see if Fursa is in contact with the ground.
             if self.rect.colliderect(block):
-                pass
+                self.on_ground = True
+                break
             else:
-                # If not in contact with the ground, accelerates falling down every 20 ms.
-                # Gravity is disabled when a jump animation is in progress.
-                if (time - self.gravity_dt) >= 20 and self.jump is False:
-                    self.gravity_dt = time
-                    self.fall_rate *= 1.1 # Acceleration rate.
-                    for i in range(int(self.fall_rate)):
-                        self.rect.y += 1
-                        # Halts falling when Fursa lands on a block.
+                self.on_ground = False
+
+        if self.on_ground is False:
+            # If not in contact with the ground, accelerates falling down every 20 ms.
+            # Gravity is disabled when a jump animation is in progress.
+            if (time - self.gravity_dt) >= 20 and self.jump is False:
+                self.gravity_dt = time
+                self.fall_rate *= 1.1 # Acceleration rate.
+                for i in range(int(self.fall_rate)):
+                    self.rect.y += 1
+                    # Halts falling when Fursa lands on a block.
+                    for block in blockers:
                         if self.rect.colliderect(block):
                             self.fall_rate = 1
+                            self.on_ground = True
                             break
+                    if self.on_ground is True:
+                        break
 
 # Class simply containing projectile frames of various attacks.
 # Created to avoid having to load from the hard drive every time a projectile is created.
@@ -355,7 +382,7 @@ class blast_frames():
     def __init__(self):
 
         # Fursa's attack blast properly separated into frames into a list from a spritesheet.
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fursa")
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa")
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_ss = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
@@ -493,6 +520,7 @@ class skeleton(pg.sprite.Sprite):
         self.cstate = 0
         self.hit = False
         self.hp = 3
+        self.on_ground = False
 
     # Skeleton AI.
     def AI(self, blockers, time, character, particle_sprites):
@@ -617,20 +645,30 @@ class skeleton(pg.sprite.Sprite):
 
 
         # Gravity emulation with current map blockers.
-        # Same as Fursa. Additional comments can be found there.
         for block in blockers:
+            # Checks to see if Fursa is in contact with the ground.
             if self.rect.colliderect(block):
-                pass
+                self.on_ground = True
+                break
             else:
-                if (time - self.gravity_dt) >= 20 and self.jump is False:
-                    self.gravity_dt = time
-                    self.fall_rate *= 1.1
-                    for i in range(int(self.fall_rate)):
-                        self.rect.y += 1
+                self.on_ground = False
+
+        if self.on_ground is False:
+            # If not in contact with the ground, accelerates falling down every 20 ms.
+            # Gravity is disabled when a jump animation is in progress.
+            if (time - self.gravity_dt) >= 20:
+                self.gravity_dt = time
+                self.fall_rate *= 1.1 # Acceleration rate.
+                for i in range(int(self.fall_rate)):
+                    self.rect.y += 1
+                    # Halts falling when Fursa lands on a block.
+                    for block in blockers:
                         if self.rect.colliderect(block):
                             self.fall_rate = 1
+                            self.on_ground = True
                             break
-
+                    if self.on_ground is True:
+                        break
 class enemy_frames():
     def __init__(self):
         self.skeleton_frames = []
@@ -679,6 +717,7 @@ class Masir_sprite(pg.sprite.Sprite):
         self.rect = pg.Rect((spawnx, spawny), (256, 198)) # Spawn point and collision size.
         self.attack = False
         self.walk = False
+        self.on_ground = False
 
 
     def upload_frames(self):
@@ -690,9 +729,9 @@ class Masir_sprite(pg.sprite.Sprite):
         #-----------------------0-------------1------------2----------
         self.all_images = [idle_images, walk_images, action_images]
 
-        directories =           ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/Masir/Idle_Png"       # Idle animation.
-                                ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Masir/Walk_Png"       # Walk animation.
-                                ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/Masir/Action_Png"]    # Action animation.
+        directories =           ["C:/Users/Andrew/Desktop/Python_Projects/Kismet/NPCs/Masir/Idle_Png"       # Idle animation.
+                                ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/NPCs/Masir/Walk_Png"       # Walk animation.
+                                ,"C:/Users/Andrew/Desktop/Python_Projects/Kismet/NPCs/Masir/Action_Png"]    # Action animation.
 
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
@@ -735,29 +774,38 @@ class Masir_sprite(pg.sprite.Sprite):
                 self.attack = False
                 self.frame_index = 0
 
+        # Gravity emulation with current map blockers.
         for block in blockers:
-        # Checks to see if Fursa is in contact with the ground.
+            # Checks to see if Fursa is in contact with the ground.
             if self.rect.colliderect(block):
-                pass
+                self.on_ground = True
+                break
             else:
-                # If not in contact with the ground, accelerates falling down every 20 ms.
-                # Gravity is disabled when a jump animation is in progress.
-                if (time - self.gravity_dt) >= 20:
-                    self.gravity_dt = time
-                    self.fall_rate *= 1.1 # Acceleration rate.
-                    for i in range(int(self.fall_rate)):
-                        self.rect.y += 1
-                        # Halts falling when Fursa lands on a block.
+                self.on_ground = False
+
+        if self.on_ground is False:
+            # If not in contact with the ground, accelerates falling down every 20 ms.
+            # Gravity is disabled when a jump animation is in progress.
+            if (time - self.gravity_dt) >= 20:
+                self.gravity_dt = time
+                self.fall_rate *= 1.1 # Acceleration rate.
+                for i in range(int(self.fall_rate)):
+                    self.rect.y += 1
+                    # Halts falling when Fursa lands on a block.
+                    for block in blockers:
                         if self.rect.colliderect(block):
                             self.fall_rate = 1
+                            self.on_ground = True
                             break
+                    if self.on_ground is True:
+                        break
 
 # -------------------------------------------------------MAPS-------------------------------------------------------------------
-# Starting area. Stores map and music data.
+# Starting area.
 class Map_01:
     def __init__(self, npc_sprites, dialog_package):
         # Map graphics and music.
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Level Start")
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_01")
         self.map = TiledMap('Map_01_1920x1080.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
         pg.mixer.music.play(loops = -1, start = 0.0)
@@ -779,10 +827,12 @@ class Map_01:
         self.p_index = 0
         self.portal_start = False
         self.portal_blast = pg.mixer.Sound('portal_noise.wav')
+        self.portal_blast.set_volume(0.50)
         self.portal_aura = pg.mixer.Sound('portal_aura_noise.wav')
+        self.portal_aura.set_volume(0.50)
         self.portal_blast_start = True
         self.portal_aura_start = True
-
+        self.portal_rect = pg.Rect(1115,660,160,160)
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600)
@@ -891,7 +941,7 @@ class Map_01:
                     self.portal_blast.play()
                     self.portal_blast_start = False
 
-            if self.Masir.rect.centerx == 1200:
+            if self.Masir.rect.centerx == self.portal_rect.centerx:
                 self.Masir.kill()
                 self.cutscene = False
                 self.Masir_dead = True
@@ -921,13 +971,28 @@ class Map_01:
             if self.p_index == len(self.portal_images):
                 self.p_index = 0
 
-        #if character.rect.centerx == 1200 and event.
+
 
 
     def update(self, character, screen):
         self.cutscene_event(character, screen)
 
+# Area 2
+class Map_02:
+    def __init__(self, npc_sprites, dialog_package):
+        # Map graphics and music.
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_02")
+        self.map = TiledMap('Map_02.tmx')
+        self.map.make_map()
+        self.cutscene = False
+        self.first_stage = True
+        self.event = 0
+        self.Masir_dead = False
+        coordinates = []
 
+    def update(self, character, screen):
+        #self.cutscene_event(character, screen)
+        pass
 
 # Game Start.
 def main():
@@ -935,18 +1000,17 @@ def main():
     # Game parameters.
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
-    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet")
-    size = width, height = 1920,1088
+    size = width, height = 1920,1080
     screen = pg.display.set_mode(size, pg.FULLSCREEN)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
-    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Dialog")
+    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Dialog")
     dialog_box = load_image('dialogue_box.png')
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
     dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size = 24)
     dialog_noise = pg.mixer.Sound('chat_noise.wav')
     dialog_package = [dialog_box, dialog_font, dialog_noise]
-    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Fonts")
+    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Fonts")
     fps_font = pg.freetype.Font('digital-7.ttf', size = 48)
 
     # Declare character sprites.
@@ -975,8 +1039,10 @@ def main():
 
     # Declare Maps.
     Starting_Area = Map_01(npc_sprites, dialog_package)
-    maps = [Starting_Area]
-    current_map = maps[0]
+    Tutorial_Area = Map_02(npc_sprites, dialog_package)
+    maps = [Starting_Area, Tutorial_Area]
+    map_index = 0
+    current_map = maps[map_index]
 
     # Game Loop
     while True:
@@ -992,7 +1058,7 @@ def main():
         particle_sprites.draw(screen)
 
         # Layer 3-------- Character sprites update.
-        character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene)
+        character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene, current_map)
         character_sprites.draw(screen)
 
         npc_sprites.update(current_map.map.blockers, time)
@@ -1010,6 +1076,12 @@ def main():
         clock.tick(90) # Framerate.
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
+
+        if Fursa.map_forward is True:
+            map_index += 1
+            current_map = maps[map_index]
+            print(map_index)
+            Fursa.map_foward = False
 
         pg.display.flip()
 
