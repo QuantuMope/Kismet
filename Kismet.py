@@ -117,6 +117,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.frame_speed = 200
         self.hit = False
         self.hp = 3
+        self.cutscene_enter = False
         self.map_forward = False
 
         # Load sound effects.
@@ -301,10 +302,14 @@ class Fursa_sprite(pg.sprite.Sprite):
         if cutscene is False:
             self.handle_keys(time, map)
             self.change_state()
+            self.cutscene_enter = True
         else:
             self.state = 0
             self.frame_speed = 200
             self.current_images = self.all_images[self.state]
+            if self.cutscene_enter:
+                self.frame_index = 0
+                self.cutscene_enter = False
 
         """
             Cycle through frames depending on self.frame_speed that is set in self.change_state().
@@ -1079,8 +1084,8 @@ def main():
 
         if Fursa.map_forward is True:
             map_index += 1
+            print(Fursa.map_foward)
             current_map = maps[map_index]
-            print(map_index)
             Fursa.map_foward = False
 
         pg.display.flip()
