@@ -296,9 +296,12 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
-    def update(self, blockers, time, enemy_sprites, cutscene, map):
+    def update(self, blockers, time, enemy_sprites, cutscene, map, map_travel):
 
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
+        if map_travel:
+            self.map_forward = False
+
         if cutscene is False:
             self.handle_keys(time, map)
             self.change_state()
@@ -1048,6 +1051,7 @@ def main():
     maps = [Starting_Area, Tutorial_Area]
     map_index = 0
     current_map = maps[map_index]
+    map_travel = False
 
     # Game Loop
     while True:
@@ -1063,7 +1067,7 @@ def main():
         particle_sprites.draw(screen)
 
         # Layer 3-------- Character sprites update.
-        character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene, current_map)
+        character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene, current_map, map_travel)
         character_sprites.draw(screen)
 
         npc_sprites.update(current_map.map.blockers, time)
@@ -1084,9 +1088,10 @@ def main():
 
         if Fursa.map_forward is True:
             map_index += 1
-            print(Fursa.map_foward)
             current_map = maps[map_index]
-            Fursa.map_foward = False
+            map_travel = True
+        else:
+            map_travel = False
 
         pg.display.flip()
 
