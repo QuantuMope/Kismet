@@ -12,6 +12,14 @@ def load_image(name):
     image = pg.image.load(name).convert_alpha()
     return image
 
+# Filter function.
+def rect_filter(list):
+    for rect in list:
+        if rect is None:
+            return False
+        else:
+            return True
+
 # Spritesheet class to split sprite sheets into proper single frames.
 class spritesheet(object):
     def __init__(self, filename):
@@ -102,8 +110,12 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((200, 400), (128, 128)) # Spawn point and collision size.
-        self.rect.inflate_ip(-50, -24)
+        self.rect = pg.Rect((200, 200), (128, 128)) # Spawn point and collision size.
+        self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 32), (18, 64))
+
+
+        #self.rect = self.image.get_rect(center = (200,600))
+        #self.rect.inflate_ip(-50, -24)
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -125,9 +137,10 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
-        self.walk_dirt = pg.mixer.Sound("stepdirt_1.wav")
+        self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
         self.walk_dirt.set_volume(0.1)
         self.walking = False
+        self.running = False
         self.on_ground = False
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
@@ -175,22 +188,27 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.state = 6
             self.frame_speed = 25
             self.walking = False
+            self.running = False
         elif self.attack:
             self.state = 3
             self.frame_speed = 75
             self.walking = False
+            self.running = False
         elif self.key_pressed and self.shift:
             self.state = 2
             self.frame_speed = 100
-            self.walking = True
+            self.walking = False
+            self.running = True
         elif self.key_pressed:
             self.state = 1
-            self.frame_speed = 150
+            self.frame_speed = 125
             self.walking = True
+            self.running = False
         else:
             self.state = 0
             self.frame_speed = 200
             self.walking = False
+            self.running = False
 
         self.current_images = self.all_images[self.state]
 
@@ -249,8 +267,6 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.facing_right = False
                     self.walking = True
 
-
-
                 # Enables attack animation.
                 # Self.attack set to True prevents other key inputs to be registered until the animation is completed.
                 elif event.key == pg.K_r:
@@ -266,7 +282,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     if self.rect.collidepoint(map.portal_rect.centerx, map.portal_rect.centery):
                         self.map_forward = True
 
-                if event.key == pg.K_ESCAPE:
+                elif event.key == pg.K_ESCAPE:
                      pg.quit()
                      sys.exit()
 
@@ -298,6 +314,11 @@ class Fursa_sprite(pg.sprite.Sprite):
     # Must be fed the blockers of the current map.
     def update(self, blockers, time, enemy_sprites, cutscene, map, map_travel):
 
+        if self.facing_right:
+            self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 33), (18, 64))
+        else:
+            self.hitbox_rect = pg.Rect((self.rect.x + 58 , self.rect.y + 33), (18, 64))
+
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
         if map_travel:
             self.map_forward = False
@@ -309,6 +330,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         else:
             self.state = 0
             self.frame_speed = 200
+            self.walking = False
+            self.running = False
             self.current_images = self.all_images[self.state]
             if self.cutscene_enter:
                 self.frame_index = 0
@@ -346,14 +369,18 @@ class Fursa_sprite(pg.sprite.Sprite):
             if self.attack == True and self.frame_index == 8:
                 self.attack_noise.play()
 
-            # if self.walking:
-            #     if self.frame_index == 3 or self.frame_index == 8:
-            #         self.walk_dirt.play()
+            elif self.walking and self.on_ground:
+                if self.frame_index == 2 or self.frame_index == 8:
+                    self.walk_dirt.play()
+
+            elif self.running and self.on_ground:
+                if self.frame_index == 4 or self.frame_index == 11:
+                    self.walk_dirt.play()
 
         # Enemy collision detection.
         for enemy in enemy_sprites:
             if enemy.attack and enemy.frame_index == 7:
-                if self.rect.collidepoint(enemy.rect.x + 50, enemy.rect.centery + 20):
+                if self.hitbox_rect.colliderect(enemy.rect):
                     self.frame_index = 0
                     self.hp -= 1
                     self.hit = True
@@ -361,7 +388,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Gravity emulation with current map blockers.
         for block in blockers:
             # Checks to see if Fursa is in contact with the ground.
-            if self.rect.colliderect(block):
+            if self.hitbox_rect.colliderect(block):
                 self.on_ground = True
                 break
             else:
@@ -377,7 +404,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.rect.y += 1
                     # Halts falling when Fursa lands on a block.
                     for block in blockers:
-                        if self.rect.colliderect(block):
+                        if self.hitbox_rect.colliderect(block):
                             self.fall_rate = 1
                             self.on_ground = True
                             break
@@ -816,7 +843,7 @@ class Map_01:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_01")
         self.map = TiledMap('Map_01_1920x1080.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
+        #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
         self.first_stage = True
@@ -1008,8 +1035,11 @@ def main():
     # Game parameters.
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
-    size = width, height = 1920,1080
-    screen = pg.display.set_mode(size, pg.FULLSCREEN)
+    pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
+    resolution = width, height = 1920,1080
+    flags = pg.FULLSCREEN | pg.DOUBLEBUF
+    screen = pg.display.set_mode(resolution, flags)
+    screen.set_alpha(None)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Dialog")
@@ -1020,10 +1050,11 @@ def main():
     dialog_package = [dialog_box, dialog_font, dialog_noise]
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Fonts")
     fps_font = pg.freetype.Font('digital-7.ttf', size = 48)
+    fps_rect = pg.Rect((1860, 10) , (42, 33))
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
-    character_sprites = pg.sprite.Group()
+    character_sprites = pg.sprite.GroupSingle()
     character_sprites.add(Fursa)
 
     # Declare npc sprites.
@@ -1032,8 +1063,8 @@ def main():
     # Declare enemy sprites.
     enemy_images = enemy_frames()
     enemy_sprites = pg.sprite.Group()
-    skeleton_01 = skeleton(enemy_images)
-    enemy_sprites.add(skeleton_01)
+    #skeleton_01 = skeleton(enemy_images)
+    #enemy_sprites.add(skeleton_01)
 
     # Declare particle sprites.
     blast_particle_frames = blast_frames()
@@ -1052,33 +1083,50 @@ def main():
     map_index = 0
     current_map = maps[map_index]
     map_travel = False
+    map_first_time = True
+    old_rects = pg.Rect((0,0),(0,0))
+    black=(0,0,0)
 
     # Game Loop
     while True:
-
+        pg.event.pump()
         time = pg.time.get_ticks()
         # Surfaces are blit and updated in order of back to front on screen.
 
         # Layer 1-------- Screen background back surface refresh.
-        screen.blit(current_map.map.back_surface, (0,0))
+        if map_first_time:
+            screen.blit(current_map.map.back_surface, (0,0))
+        else:
+            for rect in active_rects:
+                screen.blit(current_map.map.back_surface, rect, rect)
 
         # Layer 2-------- Particle sprites update.
         particle_sprites.update(Fursa, particle_sprites, enemy_sprites)
         particle_sprites.draw(screen)
+        particle_rects = [particle.rect for particle in particle_sprites.sprites()]
 
         # Layer 3-------- Character sprites update.
         character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene, current_map, map_travel)
+        pg.draw.rect(screen,black,Fursa.hitbox_rect)
         character_sprites.draw(screen)
+        character_rects = [Fursa.rect]
 
+        # Layer 4-------- NPC sprites update.
         npc_sprites.update(current_map.map.blockers, time)
         npc_sprites.draw(screen)
+        npc_rects = [npc.rect for npc in npc_sprites.sprites()]
 
-        # Layer 4-------- Enemy sprites update.
-        #enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
-        #enemy_sprites.draw(screen)
+        # Layer 5-------- Enemy sprites update.
+        enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
+        enemy_sprites.draw(screen)
+        enemy_rects = [enemy.rect for enemy in enemy_sprites.sprites()]
 
-        # Layer 5-------- Screen background front surface refresh.
-        screen.blit(current_map.map.front_surface, (0,0))
+        # Layer 6-------- Screen background front surface refresh.
+        if map_first_time:
+            screen.blit(current_map.map.front_surface, (0,0))
+        else:
+            for rect in active_rects:
+                screen.blit(current_map.map.front_surface, rect, rect)
 
         current_map.update(Fursa, screen)
 
@@ -1093,7 +1141,16 @@ def main():
         else:
             map_travel = False
 
-        pg.display.flip()
+        rects = character_rects + particle_rects + npc_rects + enemy_rects + [fps_rect]
+        active_rects = list(filter(rect_filter, rects))
+
+        if map_first_time:
+            pg.display.flip()
+        else:
+            pg.display.update(active_rects)
+
+        old_rects = rects
+        map_first_time = False
 
 if __name__ == '__main__':
     main()
