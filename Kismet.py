@@ -111,7 +111,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.facing_right = True
         self.frame_override = True
         self.rect = pg.Rect((200, 200), (128, 128)) # Spawn point and collision size.
-        self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 32), (18, 64))
+        self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 36), (18, 64))
 
         self.key_pressed = False
         self.gravity_dt = 0
@@ -244,11 +244,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Pygame event loop.
         for event in pg.event.get():
 
-            # Allow to quit game. Included in this portion to be able to keep only one event loop.
-            if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
-
             # Monitor single key presses. (actions)
             # If a key is pressed and an attack animation is not in progress, register the key press.
             if event.type == pg.KEYDOWN and self.attack == False:
@@ -312,18 +307,17 @@ class Fursa_sprite(pg.sprite.Sprite):
     def update(self, blockers, time, enemy_sprites, cutscene, map, map_travel):
 
         if self.facing_right:
-            self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 33), (18, 64))
+            self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 36), (18, 64))
         else:
-            self.hitbox_rect = pg.Rect((self.rect.x + 58 , self.rect.y + 33), (18, 64))
+            self.hitbox_rect = pg.Rect((self.rect.x + 58 , self.rect.y + 36), (18, 64))
 
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
-        if map_travel:
-            self.map_forward = False
-
         if cutscene is False:
             self.handle_keys(time, map)
             self.change_state()
             self.cutscene_enter = True
+            if map_travel:
+                self.map_forward = False
         else:
             self.state = 0
             self.frame_speed = 200
@@ -341,7 +335,6 @@ class Fursa_sprite(pg.sprite.Sprite):
             If the direction that Fursa is facing has changed before a frame can be refreshed,
             bypasses frame timer and resets the to avoid Fursa momentarily moving facing the wrong direction.
         """
-
 
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
@@ -363,16 +356,16 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.frame_override = False
 
             # Play attack noise at the correct frame.
-            if self.attack == True and self.frame_index == 8:
-                self.attack_noise.play()
-
-            elif self.walking and self.on_ground:
+            if self.walking and self.on_ground:
                 if self.frame_index == 2 or self.frame_index == 8:
                     self.walk_dirt.play()
 
             elif self.running and self.on_ground:
                 if self.frame_index == 4 or self.frame_index == 11:
                     self.walk_dirt.play()
+
+            elif self.attack == True and self.frame_index == 8:
+                self.attack_noise.play()
 
         # Enemy collision detection.
         for enemy in enemy_sprites:
@@ -399,6 +392,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.fall_rate *= 1.1 # Acceleration rate.
                 for i in range(int(self.fall_rate)):
                     self.rect.y += 1
+                    self.hitbox_rect.y += 1
                     # Halts falling when Fursa lands on a block.
                     for block in blockers:
                         if self.hitbox_rect.colliderect(block):
@@ -840,7 +834,7 @@ class Map_01:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_01")
         self.map = TiledMap('Map_01_1920x1080.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
-        #pg.mixer.music.play(loops = -1, start = 0.0)
+        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
         self.first_stage = True
@@ -861,7 +855,7 @@ class Map_01:
         self.portal_blast = pg.mixer.Sound('portal_noise.wav')
         self.portal_blast.set_volume(0.50)
         self.portal_aura = pg.mixer.Sound('portal_aura_noise.wav')
-        self.portal_aura.set_volume(0.50)
+        self.portal_aura.set_volume(0.40)
         self.portal_blast_start = True
         self.portal_aura_start = True
         self.portal_rect = pg.Rect(1115,660,160,160)
@@ -937,13 +931,14 @@ class Map_01:
 
     def cutscene_event(self, character, screen):
 
-        if self.first_stage and character.state != 0:
-            self.cutscene = True
-            self.first_stage = False
-
-        if abs(character.rect.centerx - self.Masir.rect.centerx) < 150:
-            if self.Masir_dead is False:
+        if self.cutscene is False:
+            if self.first_stage and character.state != 0:
                 self.cutscene = True
+                self.first_stage = False
+
+            if abs(character.rect.centerx - self.Masir.rect.centerx) < 150:
+                if self.Masir_dead is False:
+                    self.cutscene = True
 
         if self.cutscene:
             if self.event < 7:
@@ -969,7 +964,7 @@ class Map_01:
                     if self.portal_aura_start:
                         self.portal_aura.play(loops = -1)
                         self.portal_aura_start = False
-                if self.Masir.frame_index == 3 and self.portal_blast_start:
+                elif self.Masir.frame_index == 3 and self.portal_blast_start:
                     self.portal_blast.play()
                     self.portal_blast_start = False
 
@@ -981,9 +976,6 @@ class Map_01:
             # Allow exiting the game during a cutscene.
             for event in pg.event.get():
                 # Allow to quit game. Included in this portion to be able to keep only one event loop.
-                if event.type == pg.QUIT:
-                    pg.quit()
-                    sys.exit()
 
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
@@ -991,7 +983,7 @@ class Map_01:
                          sys.exit()
 
                 # Navigating cutscenes.
-                if event.type == pg.MOUSEBUTTONDOWN:
+                elif event.type == pg.MOUSEBUTTONDOWN:
                     self.dialog_start = True
                     self.event += 1
                     if self.event == 2:
@@ -1002,8 +994,6 @@ class Map_01:
             self.p_index += 1
             if self.p_index == len(self.portal_images):
                 self.p_index = 0
-
-
 
 
     def update(self, character, screen):
@@ -1032,7 +1022,7 @@ def main():
     # Game parameters.
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
-    pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
+    pg.event.set_allowed([pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
     resolution = width, height = 1920,1080
     flags = pg.FULLSCREEN | pg.DOUBLEBUF
     screen = pg.display.set_mode(resolution, flags)
@@ -1079,7 +1069,6 @@ def main():
     map_index = 0
     current_map = maps[map_index]
     map_travel = False
-
     black=(0,0,0)
 
     # Game Loop
@@ -1097,7 +1086,6 @@ def main():
 
         # Layer 3-------- Character sprites update.
         character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene, current_map, map_travel)
-        pg.draw.rect(screen,black,Fursa.hitbox_rect)
         character_sprites.draw(screen)
 
         # Layer 4-------- NPC sprites update.
