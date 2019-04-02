@@ -113,9 +113,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.rect = pg.Rect((200, 200), (128, 128)) # Spawn point and collision size.
         self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 32), (18, 64))
 
-
-        #self.rect = self.image.get_rect(center = (200,600))
-        #self.rect.inflate_ip(-50, -24)
         self.key_pressed = False
         self.gravity_dt = 0
         self.frame_dt = 0
@@ -1050,7 +1047,6 @@ def main():
     dialog_package = [dialog_box, dialog_font, dialog_noise]
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Fonts")
     fps_font = pg.freetype.Font('digital-7.ttf', size = 48)
-    fps_rect = pg.Rect((1860, 10) , (42, 33))
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
@@ -1083,8 +1079,7 @@ def main():
     map_index = 0
     current_map = maps[map_index]
     map_travel = False
-    map_first_time = True
-    old_rects = pg.Rect((0,0),(0,0))
+
     black=(0,0,0)
 
     # Game Loop
@@ -1094,39 +1089,27 @@ def main():
         # Surfaces are blit and updated in order of back to front on screen.
 
         # Layer 1-------- Screen background back surface refresh.
-        if map_first_time:
-            screen.blit(current_map.map.back_surface, (0,0))
-        else:
-            for rect in active_rects:
-                screen.blit(current_map.map.back_surface, rect, rect)
+        screen.blit(current_map.map.back_surface, (0,0))
 
         # Layer 2-------- Particle sprites update.
         particle_sprites.update(Fursa, particle_sprites, enemy_sprites)
         particle_sprites.draw(screen)
-        particle_rects = [particle.rect for particle in particle_sprites.sprites()]
 
         # Layer 3-------- Character sprites update.
         character_sprites.update(current_map.map.blockers, time, enemy_sprites, current_map.cutscene, current_map, map_travel)
         pg.draw.rect(screen,black,Fursa.hitbox_rect)
         character_sprites.draw(screen)
-        character_rects = [Fursa.rect]
 
         # Layer 4-------- NPC sprites update.
         npc_sprites.update(current_map.map.blockers, time)
         npc_sprites.draw(screen)
-        npc_rects = [npc.rect for npc in npc_sprites.sprites()]
 
         # Layer 5-------- Enemy sprites update.
         enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
         enemy_sprites.draw(screen)
-        enemy_rects = [enemy.rect for enemy in enemy_sprites.sprites()]
 
         # Layer 6-------- Screen background front surface refresh.
-        if map_first_time:
-            screen.blit(current_map.map.front_surface, (0,0))
-        else:
-            for rect in active_rects:
-                screen.blit(current_map.map.front_surface, rect, rect)
+        screen.blit(current_map.map.front_surface, (0,0))
 
         current_map.update(Fursa, screen)
 
@@ -1141,16 +1124,8 @@ def main():
         else:
             map_travel = False
 
-        rects = character_rects + particle_rects + npc_rects + enemy_rects + [fps_rect]
-        active_rects = list(filter(rect_filter, rects))
+        pg.display.flip()
 
-        if map_first_time:
-            pg.display.flip()
-        else:
-            pg.display.update(active_rects)
-
-        old_rects = rects
-        map_first_time = False
 
 if __name__ == '__main__':
     main()
