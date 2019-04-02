@@ -306,7 +306,7 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
-    def update(self, blockers, time, dt, enemy_sprites, cutscene, map, map_travel):
+    def update(self, blockers, time, dt, enemy_sprites, cutscene, map, map_travel, particle_sprites, particle_frames):
 
         normalized_dt = round(dt / 11)
 
@@ -370,6 +370,8 @@ class Fursa_sprite(pg.sprite.Sprite):
 
             elif self.attack == True and self.frame_index == 8:
                 self.attack_noise.play()
+                blast = Fursa_blast(particle_frames, self.facing_right, self.rect.x, self.rect.y)
+                particle_sprites.add(blast)
 
         # Enemy collision detection.
         for enemy in enemy_sprites:
@@ -430,20 +432,29 @@ class blast_frames():
 
 # Fursa's blast projectile sprite.
 class Fursa_blast(pg.sprite.Sprite):
-    def __init__(self, frames, spawnx, spawny):
+    def __init__(self, frames, Fursa_facing_right, Fursa_x, Fursa_y):
         super().__init__()
         self.blast_images_r = frames[0]
         self.blast_images_l = frames[1]
         self.impact_images_r = frames[2]
         self.impact_images_l = frames[3]
-        self.images = blast_images_r
-        self.impact = impact_images_r
-        self.image = blast_images_r[0]
-        self.rect = pg.Rect(spawnx, spawny, 64, 64) # Random spawn location off map just for initialization.
-        self.spawn = False
+
+        self.flowing_right = True if Fursa_facing_right else False
+
+        if self.flowing_right:
+            self.rect = pg.Rect(Fursa_x + 70, Fursa_y + 52, 64, 64)
+            self.images = self.blast_images_r
+            self.impact = self.impact_images_r
+        else:
+            self.rect = pg.Rect(Fursa_x + 20, Fursa_y + 52, 64, 64)
+            self.images = self.blast_images_l
+            self.impact = self.impact_images_l
+
+        self.image = self.images[0]
+        self.spawn = True
         self.i = 0
         self.e = 0
-        self.already_spawned = False
+        #self.already_spawned = False
         self.flow_right = True
         self.particle_hit = False
 
@@ -452,64 +463,22 @@ class Fursa_blast(pg.sprite.Sprite):
         normalized_dt = round(dt / 11)
         dt = normalized_dt
 
-        # At the proper frame during Fursa's attack animation, place blast coming out of Fursa's hand.
-        if Fursa.attack == True and Fursa.frame_index == 8:
-
-            # Self.already_spawned is initially set to False. Once Fursa summons the blast it is set to True,
-            # so that existing blasts aren't affected by additional attacks in the future.
-            if self.already_spawned == False:
-
-                if Fursa.facing_right:
-                    self.flow_right = True
-                else:
-                    self.flow_right = False
-
-                if self.flow_right:
-                    self.rect.x = Fursa.rect.x + 70
-                    self.rect.y = Fursa.rect.y + 52
-                    self.images = self.blast_images_r
-                    self.impact = self.impact_images_r
-
-                    self.image = self.images[0]
-                    self.spawn = True
-                    self.already_spawned = True
-                    # Creates another blast sprite and stores it in sprite group ready for Fursa.
-                    #sleep(0.05) # Waits 50 ms to allow frame index to change so two blasts are not spawned.
-                    particle_sprites.add(Fursa_blast(self.blast_images_r, self.blast_images_l, self.impact_images_r, self.impact_images_l))
-
-
-                else:
-                    self.rect.x = Fursa.rect.x + 20
-                    self.rect.y = Fursa.rect.y + 52
-                    self.images = self.blast_images_l
-                    self.impact = self.impact_images_l
-
-                    self.image = self.images[0]
-                    self.spawn = True
-                    self.already_spawned = True
-                    # Creates another blast sprite and stores it in sprite group ready for Fursa.
-                    sleep(0.05) # Waits 50 ms to allow frame index to change so two blasts are not spawned.
-                    particle_sprites.add(Fursa_blast(self.blast_images_r, self.blast_images_l, self.impact_images_r, self.impact_images_l))
-
         # Once blast is spawned by Fursa, will keep traveling across map until it hits the
         # right of left edge of the map in which case the sprite will be killed.
-        if self.spawn and self.particle_hit is False:
-            if self.images == self.blast_images_r:
-                self.rect.x += 4 * dt
-            else:
-                self.rect.x -= 4 * dt
+        if self.particle_hit is False and self.flowing_right:
+            self.rect.x += 4 * dt
+        else:
+            self.rect.x -= 4 * dt
 
-            self.image = self.images[self.i] # Frame changing.
-            self.i += 1
-            if self.i == 8:
-                self.i = 0
+        self.image = self.images[self.i] # Frame changing.
+        self.i += 1
+        if self.i == 8: self.i = 0
 
-            if self.rect.right > 1280 or self.rect.left < 0:
-                self.spawn = False
-                self.kill()
+        if self.rect.right > 1920 or self.rect.left < 0:
+            self.spawn = False
+            self.kill()
 
         elif self.spawn and self.particle_hit:
-
             self.images = self.impact
             self.image = self.images[self.e] # Frame changing.
             self.e += 1
@@ -1063,9 +1032,7 @@ def main():
 
     # Declare particle sprites.
     blast_particle_frames = blast_frames()
-    blast_particle = Fursa_blast(blast_particle_frames.frames)
     particle_sprites = pg.sprite.Group()
-    particle_sprites.add(blast_particle)
 
     # Declare Maps.
     Starting_Area = Map_01(npc_sprites, dialog_package)
@@ -1094,7 +1061,8 @@ def main():
         particle_sprites.draw(screen)
 
         # Layer 3-------- Character sprites update.
-        character_sprites.update(current_map.map.blockers, time, dt, enemy_sprites, current_map.cutscene, current_map, map_travel)
+        character_sprites.update(current_map.map.blockers, time, dt, enemy_sprites,
+                                 current_map.cutscene, current_map, map_travel, particle_sprites, blast_particle_frames.frames)
         character_sprites.draw(screen)
 
         # Layer 4-------- NPC sprites update.
