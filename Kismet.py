@@ -274,6 +274,8 @@ class Fursa_sprite(pg.sprite.Sprite):
 
                 elif event.key == pg.K_w:
                     if self.rect.collidepoint(map.portal_rect.centerx, map.portal_rect.centery):
+                        for sound in map.end_sounds:
+                            sound.stop()
                         self.map_forward = True
 
                 elif event.key == pg.K_ESCAPE:
@@ -838,6 +840,8 @@ class Map_01:
         self.portal_aura_start = True
         self.portal_rect = pg.Rect(1115,660,160,160)
 
+        self.end_sounds = [self.portal_aura]
+
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600)
         npc_sprites.add(self.Masir)
@@ -988,6 +992,8 @@ class Map_02:
         self.first_stage = True
         self.event = 0
         self.Masir_dead = False
+        self.spawnx = 100
+        self.spawny = 500
         coordinates = []
 
     def update(self, character, screen):
@@ -1084,6 +1090,8 @@ def main():
         if Fursa.map_forward is True:
             map_index += 1
             current_map = maps[map_index]
+            Fursa.rect.x = current_map.spawnx
+            Fursa.rect.y = current_map.spawny
             map_travel = True
         else:
             map_travel = False
