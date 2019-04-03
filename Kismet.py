@@ -57,9 +57,11 @@ class TiledMap:
         self.height = tm.height * tm.tileheight
         self.tm = tm
         self.blockers = []
+        self.battle_spawns = []
 
     # Renders two surfaces. back_surface is the surface that sprites appear in front of. top_surface vice versa.
     def render(self, back_surface, top_surface):
+        first_time = True
         ti = self.tm.get_tile_image_by_gid
         self.last_layer = 0
         self.layer_counter = 0
@@ -69,6 +71,7 @@ class TiledMap:
         for layer in self.tm.visible_layers:
             self.layer_counter += 1
 
+            # Create a surface of tiles for back and front surfaces.
             if isinstance(layer, pytmx.TiledTileLayer):
                 for x, y, gid in layer:
                     tile = ti(gid)
@@ -78,10 +81,18 @@ class TiledMap:
                         else:
                             top_surface.blit(tile, (x * self.tm.tilewidth, y * self.tm.tileheight))
 
-            elif isinstance(layer, pytmx.TiledObjectGroup):
+            # Create a list of platforms and walls by rect.
+            elif isinstance(layer, pytmx.TiledObjectGroup) and first_time:
                 for object in layer:
                     new_rect = pg.Rect(object.x, object.y, object.width, object.height)
                     self.blockers.append(new_rect)
+                first_time = False
+
+            # Create a list of spawn locations by rect for battle maps.
+            elif isinstance(layer, pytmx.TiledObjectGroup):
+                for object in layer:
+                    new_rect = pg.Rect(object.x, object.y, object.width, object.height)
+                    self.battle_spawns.append(new_rect)
 
     def make_map(self):
         self.pre_back_surface = pg.Surface((self.width, self.height)).convert()
@@ -129,6 +140,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.cutscene_enter = False
         self.map_forward = False
         self.battle = False
+        self.battle_transition = []
 
         # Load sound effects.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa")
@@ -136,7 +148,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
         self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
-        self.walk_dirt.set_volume(0.25)
+        self.walk_dirt.set_volume(0.15)
         self.teleport_noise = pg.mixer.Sound('teleport.wav')
         self.walking = False
         self.running = False
@@ -327,15 +339,15 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.hitbox_rect = pg.Rect((self.rect.x + 58 , self.rect.y + 36), (18, 64))
 
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
-        if cutscene is False:
+        if map.battle is True:
+            self.change_state_battle()
+            self.battle_controls()
+        elif cutscene is False:
             self.handle_keys(time, normalized_dt, map)
             self.change_state_keys()
             self.cutscene_enter = True
             if map_travel:
                 self.map_forward = False
-        elif map.battle is True:
-            self.change_state_battle()
-            self.battle_controls()
         elif cutscene:
             self.state = 0
             self.frame_speed = 200
@@ -389,8 +401,14 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         # Enemy collision detection.
         for enemy in enemy_sprites:
-            if enemy.attack and enemy.frame_index == 7:
+            if enemy.attack and enemy.frame_index == 8:
                 if self.hitbox_rect.colliderect(enemy.rect):
+                    self.battle_transition = [self.rect, self.image, enemy.rect, enemy.image]
+                    print(map.battle_spawn_pos)
+                    self.rect.centerx = map.battle_spawn_pos[1].centerx
+                    self.rect.centery = map.battle_spawn_pos[1].centery
+                    enemy.rect.centerx = map.battle_spawn_pos[4].centerx
+                    enemy.rect.centery = map.battle_spawn_pos[4].centery
                     self.frame_index = 0
                     self.hp -= 1
                     self.hit = True
@@ -541,6 +559,9 @@ class skeleton(pg.sprite.Sprite):
         self.hp = 3
         self.on_ground = False
 
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Enemies/Skeleton")
+        self.swing_sound = pg.mixer.Sound('swing.wav')
+
     # Skeleton AI.
     def AI(self, blockers, time, character, particle_sprites):
 
@@ -628,9 +649,16 @@ class skeleton(pg.sprite.Sprite):
         self.rect.y -= y_dt
         if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt
 
+    def battle(self):
+        pass
+
     def update(self, blockers, time, character, particle_sprites):
 
-        self.AI(blockers, time, character, particle_sprites)
+        if character.battle is False:
+            self.AI(blockers, time, character, particle_sprites)
+        else:
+            self.state = 0
+            self.battle()
 
         # Frame update and flipping.
 
@@ -651,6 +679,9 @@ class skeleton(pg.sprite.Sprite):
                 self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
                 self.frame_index += 1
                 self.frame_override = False
+
+            if self.state == 3 and self.frame_index == 7:
+                self.swing_sound.play()
 
             if self.frame_index == self.frame_maxes[self.state]:
                 if self.state == 2:
@@ -1002,9 +1033,6 @@ class Map_02:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_02")
         self.map = TiledMap('Map_02.tmx')
         self.map.make_map()
-        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps")
-        self.battle_map = TiledMap('battle_scene.tmx')
-        self.battle_map.make_map()
         self.cutscene = False
         self.first_stage = True
         self.battle = False
@@ -1013,8 +1041,16 @@ class Map_02:
         self.spawny = 500
         coordinates = []
 
+        # Battle Scene.
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps")
+        self.battle_map = TiledMap('battle_scene.tmx')
+        self.battle_map.make_map()
+        self.battle_spawn_pos = self.battle_map.battle_spawns
+        self.battle_impact_noise = pg.mixer.Sound('battle_start.wav')
+        self.battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
+
         # Declare enemys.
-        skeleton_01 = skeleton(enemy_frames, 1600, 500)
+        skeleton_01 = skeleton(enemy_frames, 600, 500)
         enemy_sprites.add(skeleton_01)
 
         # Dialog dictionary.
@@ -1113,7 +1149,7 @@ class Map_02:
 
     def battle_event(self, character, screen):
         self.map = self.battle_map
-
+        self.black_edges(screen)
 
 
         # Allow exiting the game during a cutscene.
@@ -1160,6 +1196,13 @@ def main():
     dialog_package = [dialog_box, dialog_font, dialog_noise]
     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Fonts")
     fps_font = pg.freetype.Font('digital-7.ttf', size = 48)
+    os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps")
+    battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
+    battle_impact_noise = pg.mixer.Sound('battle_start.wav')
+    battle_impact_noise.set_volume(0.30)
+    black = (0,0,0)
+    battle_transition = pg.Surface(resolution)
+    battle_transition.fill(black)
 
     # Declare character sprites.
     Fursa = Fursa_sprite()
@@ -1178,11 +1221,11 @@ def main():
     particle_sprites = pg.sprite.Group()
 
     # Declare Initial Map.
-    Starting_Area = Map_01(npc_sprites, dialog_package)
-    current_map = Starting_Area
+    #Starting_Area = Map_01(npc_sprites, dialog_package)
+    current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
     map_index = 0
     map_travel = False
-    black=(0,0,0)
+    battle_enter = True
 
     # Game Loop
     while True:
@@ -1201,18 +1244,17 @@ def main():
         particle_sprites.update(Fursa, dt, particle_sprites, enemy_sprites)
         particle_sprites.draw(screen)
 
-        # Layer 3-------- Character sprites update.
+        enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
+        enemy_sprites.draw(screen)
+
+        # Layer 4-------- Character sprites update.
         character_sprites.update(current_map.map.blockers, time, dt, enemy_sprites,
                                  current_map.cutscene, current_map, map_travel, particle_sprites, blast_particle_frames.frames)
         character_sprites.draw(screen)
 
-        # Layer 4-------- NPC sprites update.
+        # Layer 5-------- NPC sprites update.
         npc_sprites.update(current_map.map.blockers, time)
         npc_sprites.draw(screen)
-
-        # Layer 5-------- Enemy sprites update.
-        enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
-        enemy_sprites.draw(screen)
 
         # Layer 6-------- Screen background front surface refresh.
         screen.blit(current_map.map.front_surface, (0,0))
@@ -1222,6 +1264,7 @@ def main():
         # Print FPS on top right corner of the screen.
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
+
 
         # Handle transitioning to and from different maps.
         """ Map Index -------------------- Map --------------
@@ -1237,6 +1280,20 @@ def main():
             map_travel = True
         else:
             map_travel = False
+
+        if Fursa.battle is True and battle_enter is True:
+            battle_impact_noise.play()
+            # pg.time.wait(1500)
+            # screen.blit(battle_transition, (0,0))
+            # enemy_sprites.draw(screen)
+            # character_sprites.draw(screen)
+            # pg.display.flip()
+            # battle_sword_aftersound.play()
+            # pg.time.wait(3000)
+            # Fursa.rect.x = 300
+            # Fursa.rect.y = 0
+            battle_enter = False
+
 
         pg.display.flip()
 
