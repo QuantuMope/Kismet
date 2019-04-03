@@ -135,7 +135,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
         self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
-        self.walk_dirt.set_volume(0.1)
+        self.walk_dirt.set_volume(0.25)
+        self.teleport_noise = pg.mixer.Sound('teleport.wav')
         self.walking = False
         self.running = False
         self.on_ground = False
@@ -276,6 +277,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     if self.rect.collidepoint(map.portal_rect.centerx, map.portal_rect.centery):
                         for sound in map.end_sounds:
                             sound.stop()
+                        self.teleport_noise.play()
                         self.map_forward = True
 
                 elif event.key == pg.K_ESCAPE:
@@ -498,7 +500,7 @@ class Fursa_blast(pg.sprite.Sprite):
 
 # ----------------------------------------------------ENEMIES-------------------------------------------------------------------
 class skeleton(pg.sprite.Sprite):
-    def __init__(self, frames):
+    def __init__(self, frames, spawnx, spawny):
         super().__init__()
         self.frames = frames.skeleton_frames
         self.frame_maxes = frames.skeleton_frame_maxes
@@ -506,7 +508,7 @@ class skeleton(pg.sprite.Sprite):
         self.image = self.current_images[0]
         self.prev_state = 0
         self.state = 0
-        self.rect = pg.Rect(1200, 400, 72, 96)
+        self.rect = pg.Rect(spawnx, spawny, 72, 96)
         self.frame_index = 0
         self.frame_dt = 0
         self.frame_speed = 100
@@ -933,7 +935,7 @@ class Map_01:
             elif self.Masir.attack is False and self.event < 12:
                 self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
                 self.dialog_start = False
-            elif self.event == 12:
+            elif self.event >= 12:
                 self.Masir.walk = True
                 self.Masir.rect.x += 1
                 self.black_edges(screen)
@@ -983,7 +985,7 @@ class Map_01:
 
 # Area 2
 class Map_02:
-    def __init__(self, npc_sprites, dialog_package):
+    def __init__(self, npc_sprites, dialog_package, enemy_frames, enemy_sprites):
         # Map graphics and music.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_02")
         self.map = TiledMap('Map_02.tmx')
@@ -991,14 +993,110 @@ class Map_02:
         self.cutscene = False
         self.first_stage = True
         self.event = 0
-        self.Masir_dead = False
         self.spawnx = 100
         self.spawny = 500
         coordinates = []
 
+        # Declare enemys.
+        skeleton_01 = skeleton(enemy_frames, 1200, 500)
+        enemy_sprites.add(skeleton_01)
+
+        # Dialog dictionary.
+        self.dialog_start = True
+        self.dialog_box = dialog_package[0]
+        self.dialog_font = dialog_package[1]
+        self.dialog_noise = dialog_package[2]
+        self.e = 0
+        self.a = 0
+        self.script = {                0: ["Where'd you go?",   'Fursa'],
+                                       1: ["*A voice starts to speak starkly in Fursa's mind.*", ''],
+                                       2: ["I am watching from afar, my child.", 'Masir'],
+                                       3: ["You must learn how to use your powers again.", 'Masir'],
+                                       4: ["I have placed a skeleton up ahead. Go and vanquish it.", 'Masir']
+                                      #  5  exits dialogue.
+                                      #  6: ["Your name is Fursa. You are the son of Chaos.", '???'],
+                                      # #7 is Masir portal scene.
+                                      #  8: ["In the ancient tongue, your name means... chance.", '???'],
+                                      #  9: ["Please follow me, as we have much to accomplish.", '???'],
+                                      #  10:["Wait. What is your name?", 'Fursa'],
+                                      #  11:["You may call me Masir, little one.", 'Masir']
+                                      }
+
+    def black_edges(self, screen):
+        black = (0,0,0)
+        pg.draw.rect(screen, black, (0,0,1920,200))
+        pg.draw.rect(screen, black, (0,880,1920,200))
+
+    # Function to render and blit dialog.
+    def dialog(self, text, name, screen):
+        self.black_edges(screen)
+        screen.blit(self.dialog_box, (550,880))
+        load_text = ''
+        if self.dialog_start:
+            self.dialog_noise.play()
+            self.e = 0
+            self.a = 0
+
+        if len(text) > 50:
+            i = 50
+            while text[i] != ' ':
+                i += 1
+            if i > 52:
+                i = 50
+                while text[i] != ' ':
+                    i -= 1
+
+            new_text = [text[0:i], text[i+1:]]
+            load_text_1 = new_text[0][0:self.e]
+            load_text_2 = new_text[1][0:self.a]
+            dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
+            dialog_text_2, rect_2 = self.dialog_font.render(load_text_2)
+            screen.blit(dialog_text_1, (600, 955))
+            screen.blit(dialog_text_2, (600, 1005))
+            self.e += 1
+            if self.e >= i:
+                self.a += 1
+
+        else:
+            load_text_1 = text[0:self.e]
+            dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
+            screen.blit(dialog_text_1, (600,955))
+            self.e += 1
+
+        name_text, rect_3 = self.dialog_font.render(name)
+        screen.blit(name_text, (600,905))
+
+    def cutscene_event(self, character, screen):
+        if self.cutscene is False:
+            if self.first_stage and character.state != 0:
+                self.cutscene = True
+                self.first_stage = False
+
+        if self.cutscene:
+            if self.event < 5:
+                self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
+                self.dialog_start = False
+            else:
+                self.black_edges(screen)
+
+            # Allow exiting the game during a cutscene.
+            for event in pg.event.get():
+                # Allow to quit game. Included in this portion to be able to keep only one event loop.
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                         pg.quit()
+                         sys.exit()
+
+                # Navigating cutscenes.
+                elif event.type == pg.MOUSEBUTTONDOWN:
+                    self.dialog_start = True
+                    self.event += 1
+                    if self.event == 5:
+                        self.cutscene = False
+
     def update(self, character, screen):
-        #self.cutscene_event(character, screen)
-        pass
+        self.cutscene_event(character, screen)
+
 
 # Game Start.
 def main():
@@ -1033,19 +1131,15 @@ def main():
     # Declare enemy sprites.
     enemy_images = enemy_frames()
     enemy_sprites = pg.sprite.Group()
-    #skeleton_01 = skeleton(enemy_images)
-    #enemy_sprites.add(skeleton_01)
 
     # Declare particle sprites.
     blast_particle_frames = blast_frames()
     particle_sprites = pg.sprite.Group()
 
-    # Declare Maps.
+    # Declare Initial Map.
     Starting_Area = Map_01(npc_sprites, dialog_package)
-    Tutorial_Area = Map_02(npc_sprites, dialog_package)
-    maps = [Starting_Area, Tutorial_Area]
+    current_map = Starting_Area
     map_index = 0
-    current_map = maps[map_index]
     map_travel = False
     black=(0,0,0)
 
@@ -1084,12 +1178,19 @@ def main():
 
         current_map.update(Fursa, screen)
 
+        # Print FPS on top right corner of the screen.
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
 
+        # Handle transitioning to and from different maps.
+        """ Map Index -------------------- Map --------------
+           |   00                      Starting_Area     |
+           |   01                      Tutorial_Area     |
+         --------------------------------------------------- """
         if Fursa.map_forward is True:
             map_index += 1
-            current_map = maps[map_index]
+            if map_index == 1:
+                current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
             Fursa.rect.x = current_map.spawnx
             Fursa.rect.y = current_map.spawny
             map_travel = True
