@@ -128,6 +128,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.hp = 3
         self.cutscene_enter = False
         self.map_forward = False
+        self.battle = False
 
         # Load sound effects.
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Players/Fursa")
@@ -176,7 +177,7 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that changes Fursa's animation depending on the action performed.
     # Continuously called in self.update().
-    def change_state(self):
+    def change_state_keys(self):
 
         # Each frame list has a state ID that can be found outlined in self.upload_frames().
         # Each animation type has its own fps.
@@ -308,6 +309,12 @@ class Fursa_sprite(pg.sprite.Sprite):
                         self.jump_index = 0
                         break
 
+    def change_state_battle(self):
+        pass
+
+    def battle_controls(self):
+        pass
+
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
     def update(self, blockers, time, dt, enemy_sprites, cutscene, map, map_travel, particle_sprites, particle_frames):
@@ -322,11 +329,14 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
         if cutscene is False:
             self.handle_keys(time, normalized_dt, map)
-            self.change_state()
+            self.change_state_keys()
             self.cutscene_enter = True
             if map_travel:
                 self.map_forward = False
-        else:
+        elif map.battle is True:
+            self.change_state_battle()
+            self.battle_controls()
+        elif cutscene:
             self.state = 0
             self.frame_speed = 200
             self.walking = False
@@ -384,6 +394,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.frame_index = 0
                     self.hp -= 1
                     self.hit = True
+                    self.battle = True
 
         # Gravity emulation with current map blockers.
         for block in blockers:
@@ -816,10 +827,11 @@ class Map_01:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_01")
         self.map = TiledMap('Map_01_1920x1080.tmx')
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
+        #pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.cutscene = False
         self.first_stage = True
+        self.battle = False
         self.event = 0
         self.Masir_dead = False
         coordinates = []
@@ -990,15 +1002,19 @@ class Map_02:
         os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps/Map_02")
         self.map = TiledMap('Map_02.tmx')
         self.map.make_map()
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps")
+        self.battle_map = TiledMap('battle_scene.tmx')
+        self.battle_map.make_map()
         self.cutscene = False
         self.first_stage = True
+        self.battle = False
         self.event = 0
         self.spawnx = 100
         self.spawny = 500
         coordinates = []
 
         # Declare enemys.
-        skeleton_01 = skeleton(enemy_frames, 1200, 500)
+        skeleton_01 = skeleton(enemy_frames, 1600, 500)
         enemy_sprites.add(skeleton_01)
 
         # Dialog dictionary.
@@ -1009,11 +1025,12 @@ class Map_02:
         self.e = 0
         self.a = 0
         self.script = {                0: ["Where'd you go?",   'Fursa'],
-                                       1: ["*A voice starts to speak starkly in Fursa's mind.*", ''],
+                                       1: ["*A voice starts to sound in Fursa's mind.*", ''],
                                        2: ["I am watching from afar, my child.", 'Masir'],
-                                       3: ["You must learn how to use your powers again.", 'Masir'],
-                                       4: ["I have placed a skeleton up ahead. Go and vanquish it.", 'Masir']
+                                       3: ["I am afraid I must limit my aid. You must learn how to use your powers again.", 'Masir'],
+                                       4: ["An evil enemy is up ahead. Go and vanquish it.", 'Masir']
                                       #  5  exits dialogue.
+
                                       #  6: ["Your name is Fursa. You are the son of Chaos.", '???'],
                                       # #7 is Masir portal scene.
                                       #  8: ["In the ancient tongue, your name means... chance.", '???'],
@@ -1094,8 +1111,32 @@ class Map_02:
                     if self.event == 5:
                         self.cutscene = False
 
+    def battle_event(self, character, screen):
+        self.map = self.battle_map
+
+
+
+        # Allow exiting the game during a cutscene.
+        for event in pg.event.get():
+            # Allow to quit game. Included in this portion to be able to keep only one event loop.
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                     pg.quit()
+                     sys.exit()
+
+            # Navigating cutscenes.
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                pass
+
+
     def update(self, character, screen):
-        self.cutscene_event(character, screen)
+        if character.battle is False:
+            self.battle = False
+            self.cutscene_event(character, screen)
+        else:
+            self.battle = True
+            self.battle_event(character, screen)
+
 
 
 # Game Start.
