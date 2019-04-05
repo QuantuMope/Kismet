@@ -15,8 +15,9 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((200, 200), (128, 128)) # Spawn point and collision size.
+        self.rect = pg.Rect((200, 20), (128, 128)) # Spawn point and collision size.
         self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 36), (18, 64))
+        self.refresh_rect = pg.Rect((self.rect.x - 64, self.rect.y - 64), (256, 256))
 
         # States
         self.key_pressed = False
@@ -242,6 +243,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         else:
             self.hitbox_rect = pg.Rect((self.rect.x + 58 , self.rect.y + 36), (18, 64))
 
+        self.refresh_rect = pg.Rect((self.rect.x - 64, self.rect.y - 64), (256, 256))
+
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
         if map.battle is True:
             self.state = 0
@@ -337,6 +340,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     file.cd('Maps\Map_02')
                     battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
                     pg.mixer.music.play(loops = -1, start = 0.0)
+                    map.map_first_time = True
                     self.rect.centerx = map.battle_spawn_pos[1].centerx
                     self.rect.centery = map.battle_spawn_pos[1].centery
                     enemy.rect.centerx = map.battle_spawn_pos[3].centerx
@@ -366,9 +370,13 @@ class Fursa_sprite(pg.sprite.Sprite):
             if (time - self.gravity_dt) >= 20 and self.jump is False:
                 self.gravity_dt = time
                 self.fall_rate *= 1.1 # Acceleration rate.
+                start_fall = self.rect.y
                 for i in range(int(self.fall_rate)):
                     self.rect.y += 1
                     self.hitbox_rect.y += 1
+                    end_fall = self.rect.y
+                    if (end_fall - start_fall) > 256:
+                        pg.display.update(self.refresh_rect)
                     # Halts falling when Fursa lands on a block.
                     for block in blockers:
                         if self.hitbox_rect.colliderect(block):
@@ -421,6 +429,7 @@ class Fursa_blast(pg.sprite.Sprite):
             self.impact = self.impact_images_l
 
         self.image = self.images[0]
+        self.refresh_rect = pg.Rect((self.rect.x - 16, self.rect.y - 16), (96, 96))
         self.spawn = True
         self.i = 0
         self.e = 0
@@ -432,6 +441,8 @@ class Fursa_blast(pg.sprite.Sprite):
 
         normalized_dt = round(dt / 11)
         dt = normalized_dt
+
+        self.refresh_rect = pg.Rect((self.rect.x - 16, self.rect.y - 16), (96, 96))
 
         # Once blast is spawned by Fursa, will keep traveling across map until it hits the
         # right of left edge of the map in which case the sprite will be killed.

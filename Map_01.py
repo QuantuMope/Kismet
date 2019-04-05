@@ -20,6 +20,7 @@ class Map_01():
         self.battle = False
         self.event = 0
         self.Masir_dead = False
+        self.map_first_time = True
         coordinates = []
 
         # Portal animation.
@@ -40,6 +41,8 @@ class Map_01():
         self.portal_aura_start = True
         self.portal_rect = pg.Rect(1115,660,160,160)
 
+        self.refresh_rects = [self.portal_rect]
+
         self.end_sounds = [self.portal_aura]
 
         # Declare npcs.
@@ -47,6 +50,8 @@ class Map_01():
         npc_sprites.add(self.Masir)
 
         # Dialog dictionary.
+        self.black_edge1 = pg.Rect((0,0), (1920,200))
+        self.black_edge2 = pg.Rect((0,880), (1920,200))
         self.dialog_start = True
         self.dialog_box = dialog_package[0]
         self.dialog_font = dialog_package[1]
@@ -123,6 +128,8 @@ class Map_01():
                     self.cutscene = True
 
         if self.cutscene:
+            self.refresh_rects = [self.portal_rect, self.black_edge1, self.black_edge2]
+
             if self.event < 7:
                 self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
                 self.dialog_start = False
@@ -170,6 +177,9 @@ class Map_01():
                     self.event += 1
                     if self.event == 2:
                         self.cutscene = False
+
+        else:
+            self.refresh_rects = [self.portal_rect]
 
         if self.portal_start is True:
             screen.blit(self.portal_images[self.p_index], (1115,660))

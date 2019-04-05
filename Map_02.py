@@ -21,7 +21,10 @@ class Map_02():
         self.event = 0
         self.spawnx = 100
         self.spawny = 500
+        self.map_first_time = True
         coordinates = []
+
+        self.refresh_rects = []
 
         # Battle Scene.
         self.battle_map = TiledMap('battle_scene.tmx')
@@ -36,6 +39,8 @@ class Map_02():
         enemy_sprites.add(skeleton_01)
 
         # Dialog dictionary.
+        self.black_edge1 = pg.Rect((0,0), (1920,200))
+        self.black_edge2 = pg.Rect((0,880), (1920,200))
         self.dialog_start = True
         self.dialog_box = dialog_package[0]
         self.dialog_font = dialog_package[1]
@@ -108,6 +113,8 @@ class Map_02():
                 self.first_stage = False
 
         if self.cutscene:
+            self.refresh_rects = [self.black_edge1, self.black_edge2]
+
             if self.event < 5:
                 self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
                 self.dialog_start = False
@@ -128,6 +135,9 @@ class Map_02():
                     self.event += 1
                     if self.event == 5:
                         self.cutscene = False
+
+        else:
+            self.refresh_rects = []
 
     def battle_event(self, character, screen):
         self.map = self.battle_map

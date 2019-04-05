@@ -13,6 +13,10 @@ class skeleton(pg.sprite.Sprite):
         self.prev_state = 0
         self.state = 0
         self.rect = pg.Rect(spawnx, spawny, 72, 96)
+        self.hitbox_rect = None
+        self.refresh_rect = pg.Rect((self.rect.x - 30, self.rect.y), (128, 128))
+
+        # States
         self.frame_index = 0
         self.frame_dt = 0
         self.frame_speed = 100
@@ -128,6 +132,8 @@ class skeleton(pg.sprite.Sprite):
         pass
 
     def update(self, blockers, time, character, particle_sprites):
+
+        self.refresh_rect = pg.Rect((self.rect.x - 30, self.rect.y), (128, 128))
 
         if character.battle is False:
             self.AI(blockers, time, character, particle_sprites)
