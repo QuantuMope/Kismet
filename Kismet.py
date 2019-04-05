@@ -439,13 +439,15 @@ class Fursa_sprite(pg.sprite.Sprite):
                     pg.time.wait(1000)
 
                     # Spawn and music start.
+                    self.facing_right = True
+                    enemy.facing_right = False
                     os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/Maps")
                     battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
                     pg.mixer.music.play(loops = -1, start = 0.0)
                     self.rect.centerx = map.battle_spawn_pos[1].centerx
                     self.rect.centery = map.battle_spawn_pos[1].centery
-                    enemy.rect.centerx = map.battle_spawn_pos[4].centerx
-                    enemy.rect.centery = map.battle_spawn_pos[4].centery
+                    enemy.rect.centerx = map.battle_spawn_pos[3].centerx
+                    enemy.rect.centery = map.battle_spawn_pos[3].centery
                     self.frame_index = 0
                     self.hp -= 1
                     self.hit = True
@@ -656,7 +658,7 @@ class skeleton(pg.sprite.Sprite):
             # Start attack animation.
             if abs(self.rect.centerx - character.rect.centerx) < 100 and self.chase:
                 self.attack = True
-                self.frame_speed = 150
+                self.frame_speed = 100
                 self.state = 3
 
             for particle in particle_sprites:
@@ -1087,6 +1089,9 @@ class Map_02:
         self.battle_map = TiledMap('battle_scene.tmx')
         self.battle_map.make_map()
         self.battle_spawn_pos = self.battle_map.battle_spawns
+        os.chdir("C:/Users/Andrew/Desktop/Python_Projects/Kismet/UI/Combat")
+        self.combat_box = load_image('Combat UI Box.png')
+        self.combat_box = pg.transform.scale(self.combat_box, (960,300))
 
         # Declare enemys.
         skeleton_01 = skeleton(enemy_frames, 600, 500)
@@ -1188,7 +1193,8 @@ class Map_02:
 
     def battle_event(self, character, screen):
         self.map = self.battle_map
-        self.black_edges(screen)
+        screen.blit(self.combat_box, (0,780))
+        screen.blit(self.combat_box, (960,780))
 
 
         # Allow exiting the game during a cutscene.
@@ -1222,7 +1228,7 @@ def main():
     pg.init()
     pg.event.set_allowed([pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
     resolution = width, height = 1920,1080
-    flags = pg.FULLSCREEN | pg.DOUBLEBUF
+    flags = pg.FULLSCREEN | pg.HWSURFACE | pg.DOUBLEBUF
     screen = pg.display.set_mode(resolution, flags)
     screen.set_alpha(None)
     pg.display.set_caption('Kismet')
@@ -1268,8 +1274,8 @@ def main():
     while True:
 
         pg.event.pump()
-        time = pg.time.get_ticks()
 
+        time = pg.time.get_ticks()
         dt = clock.tick(90) # Framerate.
 
         # Surfaces are blit and updated in order of back to front on screen.
@@ -1301,6 +1307,7 @@ def main():
         # Print FPS on top right corner of the screen.
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
+        print(clock.get_fps())
 
 
         # Handle transitioning to and from different maps.
