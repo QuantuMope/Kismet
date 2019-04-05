@@ -35,6 +35,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.hp = 3
         self.cutscene_enter = False
         self.map_forward = False
+        self.battle_forward = False
         self.battle = False
         self.walking = False
         self.running = False
@@ -234,7 +235,8 @@ class Fursa_sprite(pg.sprite.Sprite):
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
-    def update(self, blockers, time, dt, cutscene, screen, map, map_travel, character_sprites, enemy_sprites, particle_sprites, particle_frames, file):
+    def update(self, blockers, time, dt, cutscene, screen, map, map_travel, battle_travel,
+                character_sprites, enemy_sprites, particle_sprites, particle_frames, file):
 
         normalized_dt = round(dt / 11)
 
@@ -250,6 +252,8 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.state = 0
             self.change_state_battle()
             self.battle_controls()
+            if battle_travel:
+                self.battle_forward = False
         elif cutscene is False:
             self.handle_keys(time, normalized_dt, map)
             self.change_state_keys()
@@ -340,7 +344,6 @@ class Fursa_sprite(pg.sprite.Sprite):
                     file.cd('Maps\Map_02')
                     battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
                     pg.mixer.music.play(loops = -1, start = 0.0)
-                    map.map_first_time = True
                     self.rect.centerx = map.battle_spawn_pos[1].centerx
                     self.rect.centery = map.battle_spawn_pos[1].centery
                     enemy.rect.centerx = map.battle_spawn_pos[3].centerx
@@ -350,6 +353,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.hit = True
                     self.jump = False
                     self.battle = True
+                    self.battle_forward = True
                     self.state = 0
 
 

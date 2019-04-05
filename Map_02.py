@@ -4,8 +4,6 @@ from spritesheet import spritesheet
 from TiledMap import TiledMap
 from enemies import skeleton, enemy_frames
 
-
-
 # Area 2
 class Map_02():
     def __init__(self, npc_sprites, dialog_package, enemy_frames, enemy_sprites):
@@ -31,7 +29,7 @@ class Map_02():
         self.battle_map.make_map()
         self.battle_spawn_pos = self.battle_map.battle_spawns
         file.cd('UI\Combat')
-        self.combat_box = pg.image.load('Combat UI Box.png').convert_alpha()
+        self.combat_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
         self.combat_box = pg.transform.scale(self.combat_box, (960,300))
 
         # Declare enemys.
