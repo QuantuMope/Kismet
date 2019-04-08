@@ -52,11 +52,12 @@ def main():
 
     # Declare Initial Map.
 
-    # #Test
-    # current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
-    #Normal
-    Starting_Area = Map_01(npc_sprites, dialog_package)
-    current_map = Starting_Area
+    #Test
+    current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
+
+    # #Normal
+    # Starting_Area = Map_01(npc_sprites, dialog_package)
+    # current_map = Starting_Area
 
     map_index = 0
     map_travel = False
@@ -71,7 +72,7 @@ def main():
         pg.event.pump()
 
         time = pg.time.get_ticks()
-        dt = clock.tick(90) # Framerate.
+        dt = clock.tick(97) # Framerate.
 
         # Surfaces are blit and updated in order of back to front on screen.
 
@@ -123,7 +124,7 @@ def main():
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
 
-        # TEST
+        #TEST
         # if current_map.map_first_time:
         #     pass
         # else:

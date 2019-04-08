@@ -22,15 +22,35 @@ class Map_02():
         self.map_first_time = True
         coordinates = []
 
-        self.refresh_rects = []
-
         # Battle Scene.
         self.battle_map = TiledMap('battle_scene.tmx')
         self.battle_map.make_map()
         self.battle_spawn_pos = self.battle_map.battle_spawns
         file.cd('UI\Combat')
         self.combat_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
-        self.combat_box = pg.transform.scale(self.combat_box, (960,300))
+        self.status_box = pg.transform.scale(self.combat_box, (670,300))
+        self.combat_box = pg.transform.scale(self.combat_box, (690,300))
+        self.combat_box_rect = pg.Rect((720, 750), (690, 300))
+        self.description_box = pg.transform.scale(self.combat_box, (460,300))
+        self.pointer = pg.image.load('black_triangle.png').convert_alpha()
+        self.pointer = pg.transform.scale(self.pointer, (40,25))
+        file.cd('UI\Fonts')
+        self.combat_font = pg.freetype.Font('ferrum.otf', size = 24)
+        self.hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size = 24)
+
+        white = (255,255,255)
+        black = (0,0,0)
+        self.current_select = 1
+        attack_select = white
+        bag_select = black
+        run_select = black
+        spell_select = black
+        self.combat_selector = { 1: attack_select,
+                                 2: bag_select,
+                                 3: run_select,
+                                 4: spell_select }
+
+        self.refresh_rects = []
 
         # Declare enemys.
         skeleton_01 = skeleton(enemy_frames, 600, 500)
@@ -138,15 +158,93 @@ class Map_02():
             self.refresh_rects = []
 
     def battle_event(self, character, screen):
+        self.refresh_rects = [self.combat_box_rect]
+        white = (255,255,255)
+        black = (0,0,0)
         self.map = self.battle_map
-        screen.blit(self.combat_box, (0,780))
-        screen.blit(self.combat_box, (960,780))
+        screen.blit(self.status_box, (50,750))
+        screen.blit(self.combat_box, (720,750))
+        screen.blit(self.description_box, (1410,750))
+        Fursa_name, rect = self.dialog_font.render('FURSA', fgcolor = black, size = 36)
+        Fursa_lvl, rect = self.dialog_font.render('Lvl.1', fgcolor = black, size = 18)
+        Fursa_HP, rect = self.dialog_font.render('HP:', fgcolor = (139,0,0), size = 30)
+        Fursa_MP, rect = self.dialog_font.render('MP:', fgcolor = (0,0,139), size = 30)
+        Fursa_hpnum, rect = self.hpmp_font.render('10/10', fgcolor = black, size = 48)
+        Fursa_mpnum, rect = self.hpmp_font.render('10/10', fgcolor = black, size = 48)
+        screen.blit(Fursa_name, (80, 800))
+        screen.blit(Fursa_lvl, (210, 815))
+        screen.blit(Fursa_HP, (300, 805))
+        screen.blit(Fursa_hpnum, (370, 805))
+        screen.blit(Fursa_MP, (500, 805))
+        screen.blit(Fursa_mpnum, (570, 805))
+
+        attack_button, rect = self.dialog_font.render('ATTACK', fgcolor = self.combat_selector[1], size = 36)
+        spell_button, rect = self.dialog_font.render('SPELL', fgcolor = self.combat_selector[4], size = 36)
+        bag_button, rect = self.dialog_font.render('BAG', fgcolor = self.combat_selector[2], size = 36)
+        run_button, rect = self.dialog_font.render('RUN', fgcolor = self.combat_selector[3], size = 36)
+        screen.blit(attack_button, (850, 830))
+        screen.blit(spell_button, (850, 930))
+        screen.blit(bag_button, (1150, 830))
+        screen.blit(run_button, (1150, 930))
+
+
+        screen.blit(self.pointer, (self.battle_spawn_pos[1].x, self.battle_spawn_pos[1].y))
+
+
+        """ 1 : Action | 2 : Bag      Action UI Selector goes by clockwise increasing state IDs.
+            -----------------------
+            4 : Spell  | 3 : Run    """
 
 
         # Allow exiting the game during a cutscene.
         for event in pg.event.get():
             # Allow to quit game. Included in this portion to be able to keep only one event loop.
             if event.type == pg.KEYDOWN:
+                if self.current_select == 1:
+                    if event.key == pg.K_s:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 4
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                    elif event.key == pg.K_d:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 2
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                elif self.current_select == 2:
+                    if event.key == pg.K_a:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 1
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                    elif event.key == pg.K_s:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 3
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                elif self.current_select == 3:
+                    if event.key == pg.K_a:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 4
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                    elif event.key == pg.K_w:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 2
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                elif self.current_select == 4:
+                    if event.key == pg.K_w:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 1
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+                    elif event.key == pg.K_d:
+                        self.combat_selector[self.current_select] = black
+                        self.current_select = 3
+                        self.combat_selector[self.current_select] = white
+                        self.dialog_noise.play()
+
                 if event.key == pg.K_ESCAPE:
                      pg.quit()
                      sys.exit()

@@ -346,8 +346,8 @@ class Fursa_sprite(pg.sprite.Sprite):
                     pg.mixer.music.play(loops = -1, start = 0.0)
                     self.rect.centerx = map.battle_spawn_pos[1].centerx
                     self.rect.centery = map.battle_spawn_pos[1].centery
-                    enemy.rect.centerx = map.battle_spawn_pos[3].centerx
-                    enemy.rect.centery = map.battle_spawn_pos[3].centery
+                    enemy.rect.centerx = map.battle_spawn_pos[4].centerx
+                    enemy.rect.centery = map.battle_spawn_pos[4].centery
                     self.frame_index = 0
                     self.hp -= 1
                     self.hit = True
