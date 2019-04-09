@@ -188,5 +188,5 @@ class Map_01():
                 self.p_index = 0
 
 
-    def update(self, character, screen):
+    def update(self, character, enemy_sprites, screen):
         self.cutscene_event(character, screen)

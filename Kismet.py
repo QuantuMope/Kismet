@@ -122,14 +122,14 @@ def main():
 
         # Layer 7----------------------------------------------------------------------------------------------- Cutscene animations and fps.
 
-        current_map.update(Fursa, screen)
+        current_map.update(Fursa, enemy_sprites, screen)
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
 
         #TEST
         # if current_map.map_first_time:
         #     pass
-        # else:
+        # else:d
         #     for rect in active_rects:
         #         pg.draw.rect(screen, black, rect)
 

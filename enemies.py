@@ -38,6 +38,10 @@ class skeleton(pg.sprite.Sprite):
         self.hp = 3
         self.on_ground = False
 
+        # Combat attributes.
+        self.speed = 1
+        self.party_spawn = 4
+
         file.cd("Enemies\Skeleton")
         self.swing_sound = pg.mixer.Sound('swing.wav')
 

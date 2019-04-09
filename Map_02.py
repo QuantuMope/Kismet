@@ -36,7 +36,8 @@ class Map_02():
         self.description_box = pg.transform.scale(self.combat_box, (460,300))
         self.description_rect = pg.Rect((1410, 750), (460, 300))
         self.pointer = pg.image.load('black_triangle.png').convert_alpha()
-        self.pointer = pg.transform.scale(self.pointer, (40,25))
+        self.pointer = pg.transform.scale(self.pointer, (60,42))
+        self.point_rect = self.pointer.get_rect()
         file.cd('UI\Fonts')
         self.combat_font = pg.freetype.Font('ferrum.otf', size = 24)
         self.hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size = 24)
@@ -45,9 +46,13 @@ class Map_02():
         self.battle_map.front_surface.blit(self.combat_box, (720,750))
         self.battle_map.front_surface.blit(self.description_box, (1410,750))
 
+        self.battle_init = True
+
         white = (255,255,255)
         black = (0,0,0)
-        self.current_select = 1
+        self.current_slot = 1
+        self.action_select = False
+        self.pointer_frame = 0
         attack_select = white
         bag_select = black
         run_select = black
@@ -57,10 +62,6 @@ class Map_02():
                                  3: run_select,
                                  4: spell_select }
 
-        self.combat_descriptions = { 1: 'Attack the enemy with a basic attack. Low damage but free of resources.',
-                                     2: 'Use an item in your bag to heal or temporarily boost your attributes.',
-                                     3: 'Attempt to run away from combat. Has a chance of failing. No experience awarded if successful.',
-                                     4: 'Attack the enemy with a spell of your choice. Spells require mana to cast.'}
         # Declare enemys.
         skeleton_01 = skeleton(enemy_frames, 600, 500)
         enemy_sprites.add(skeleton_01)
@@ -195,18 +196,20 @@ class Map_02():
                 combat_descrip, rect = self.dialog_font.render(combat_text)
                 screen.blit(combat_descrip, (1430, 800 + 50 * rep))
 
-    def battle_event(self, character, screen):
-
+    def battle_event(self, character, enemy_sprites, screen):
+        self.slot_labels = character.slot_labels
+        self.combat_descriptions = character.combat_descriptions
         white = (255,255,255)
         black = (0,0,0)
         self.map = self.battle_map
 
+        # Fursa UI.
         Fursa_name, rect = self.dialog_font.render('FURSA', fgcolor = black, size = 36)
-        Fursa_lvl, rect = self.dialog_font.render('Lvl.1', fgcolor = black, size = 18)
+        Fursa_lvl, rect = self.dialog_font.render('Lvl.%x' % character.level, fgcolor = black, size = 18)
         Fursa_HP, rect = self.dialog_font.render('HP:', fgcolor = (139,0,0), size = 30)
         Fursa_MP, rect = self.dialog_font.render('MP:', fgcolor = (0,0,139), size = 30)
-        Fursa_hpnum, rect = self.hpmp_font.render('10/10', fgcolor = black, size = 48)
-        Fursa_mpnum, rect = self.hpmp_font.render('10/10', fgcolor = black, size = 48)
+        Fursa_hpnum, rect = self.hpmp_font.render('%s/%s' % (str(character.current_hp), str(character.max_hp)), fgcolor = black, size = 48)
+        Fursa_mpnum, rect = self.hpmp_font.render('%s/%s' % (str(character.current_mp), str(character.max_mp)), fgcolor = black, size = 48)
         screen.blit(Fursa_name, (80, 800))
         screen.blit(Fursa_lvl, (210, 815))
         screen.blit(Fursa_HP, (300, 805))
@@ -214,24 +217,47 @@ class Map_02():
         screen.blit(Fursa_MP, (500, 805))
         screen.blit(Fursa_mpnum, (570, 805))
 
-        attack_button, rect = self.dialog_font.render('ATTACK', fgcolor = self.combat_selector[1], size = 36)
-        spell_button, rect = self.dialog_font.render('SPELL', fgcolor = self.combat_selector[4], size = 36)
-        bag_button, rect = self.dialog_font.render('BAG', fgcolor = self.combat_selector[2], size = 36)
-        run_button, rect = self.dialog_font.render('RUN', fgcolor = self.combat_selector[3], size = 36)
-        screen.blit(attack_button, (850, 830))
-        screen.blit(spell_button, (850, 930))
-        screen.blit(bag_button, (1150, 830))
-        screen.blit(run_button, (1150, 930))
+        # Combat UI.
+        for slot in range(1, 5):
+            slot_button, rect = self.dialog_font.render(self.slot_labels[slot][self.action_select], fgcolor = self.combat_selector[slot], size = 36)
+            coordinates = [(850 - int((rect.width - 150)/2), 830), (1150 - int((rect.width - 150)/2), 830),
+                           (1150 - int((rect.width - 150)/2), 930), (850 - int((rect.width - 150)/2), 930)]
+            screen.blit(slot_button, coordinates[slot - 1])
 
-
-        screen.blit(self.pointer, (self.battle_spawn_pos[1].x, self.battle_spawn_pos[1].y))
 
         self.refresh_rects = []
         self.ui = [self.combat_box_rect, self.description_rect]
-        self.combat_descrip(self.combat_descriptions[self.current_select], screen)
+        self.combat_descrip(self.combat_descriptions[self.current_slot][self.action_select], screen)
+
+        # Initializing battle parameters.
+        if self.battle_init:
+            self.turn_i = 0
+            # Turn order based on speed. *WARNING Very preliminary. Rough code for simple functionality.
+            # Will have to completely revamp once additional sprites are added.
+            for enemy in enemy_sprites:
+                if character.speed > enemy.speed:
+                    self.turn_order = [character.party_spawn, enemy.party_spawn]
+                else:
+                    self.turn_order = [enemy.party_spawn, character.party_spawn]
+            self.battle_init = False
 
 
-        """ 1 : Action | 2 : Bag      Action UI Selector goes by clockwise increasing state IDs.
+        # Turn and enemy selection pointer.
+        if self.pointer_frame <= 30:
+            self.pointer_frame += 1
+            screen.blit(self.pointer, (self.battle_spawn_pos[self.turn_order[self.turn_i]].centerx - self.point_rect.width / 2,
+                                       self.battle_spawn_pos[self.turn_order[self.turn_i]].centery + 80))
+        elif self.pointer_frame <= 60:
+            self.pointer_frame += 1
+            screen.blit(self.pointer, (self.battle_spawn_pos[self.turn_order[self.turn_i]].centerx - self.point_rect.width / 2,
+                                       self.battle_spawn_pos[self.turn_order[self.turn_i]].centery + 90))
+        else:
+            self.pointer_frame = 0
+            screen.blit(self.pointer, (self.battle_spawn_pos[self.turn_order[self.turn_i]].centerx - self.point_rect.width / 2,
+                                       self.battle_spawn_pos[self.turn_order[self.turn_i]].centery + 80))
+
+
+        """ 1 : Action | 2 : Bag      Action UI Selector goes by clockwise slots increasing state IDs.
             -----------------------
             4 : Spell  | 3 : Run    """
 
@@ -240,51 +266,69 @@ class Map_02():
         for event in pg.event.get():
             # Allow to quit game. Included in this portion to be able to keep only one event loop.
             if event.type == pg.KEYDOWN:
-                if self.current_select == 1:
-                    if event.key == pg.K_s:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 4
-                        self.combat_selector[self.current_select] = white
+                if self.action_select is True:
+                    if event.key == pg.K_e:
+                        self.action_select = False
+                        self.combat_selector[self.current_slot] = black
+                        self.current_slot = 1
+                        self.combat_selector[self.current_slot] = white
                         self.dialog_noise.play()
-                        #self.combat_descrip(self.combat_descriptions[self.current_select], screen)
-                    elif event.key == pg.K_d:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 2
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
-                elif self.current_select == 2:
-                    if event.key == pg.K_a:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 1
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
-                    elif event.key == pg.K_s:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 3
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
-                elif self.current_select == 3:
-                    if event.key == pg.K_a:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 4
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
-                    elif event.key == pg.K_w:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 2
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
-                elif self.current_select == 4:
-                    if event.key == pg.K_w:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 1
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
-                    elif event.key == pg.K_d:
-                        self.combat_selector[self.current_select] = black
-                        self.current_select = 3
-                        self.combat_selector[self.current_select] = white
-                        self.dialog_noise.play()
+                    if self.current_slot == 1:
+                        if event.key == pg.K_r:
+                            self.dialog_noise.play()
+
+                else:
+
+                    if self.current_slot == 1:
+                        if event.key == pg.K_s and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 4
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif event.key == pg.K_d and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 2
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                    elif self.current_slot == 4:
+                        if event.key == pg.K_r and self.slot_labels[slot][self.action_select] != '---':
+                            self.action_select = True
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 1
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif event.key == pg.K_w and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 1
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif event.key == pg.K_d and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 3
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                    elif self.current_slot == 2:
+                        if event.key == pg.K_a and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 1
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif event.key == pg.K_s and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 3
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                    elif self.current_slot == 3:
+                        if event.key == pg.K_a and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 4
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif event.key == pg.K_w and self.slot_labels[slot][self.action_select] != '---':
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 2
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
 
                 if event.key == pg.K_ESCAPE:
                      pg.quit()
@@ -295,10 +339,10 @@ class Map_02():
                 pass
 
 
-    def update(self, character, screen):
+    def update(self, character, enemy_sprites, screen):
         if character.battle is False:
             self.battle = False
             self.cutscene_event(character, screen)
         else:
             self.battle = True
-            self.battle_event(character, screen)
+            self.battle_event(character, enemy_sprites, screen)

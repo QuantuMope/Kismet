@@ -32,7 +32,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.attack = False
         self.frame_speed = 200
         self.hit = False
-        self.hp = 3
         self.cutscene_enter = False
         self.map_forward = False
         self.battle_forward = False
@@ -49,6 +48,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
         self.walk_dirt.set_volume(0.15)
         self.teleport_noise = pg.mixer.Sound('teleport.wav')
+
+        # Battle transition elements are part of Fursa's class due to the location of the event loop upon transition.
         # Battle Transition Sounds.
         self.battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
         self.battle_impact_noise = pg.mixer.Sound('battle_start.wav')
@@ -59,6 +60,33 @@ class Fursa_sprite(pg.sprite.Sprite):
         black = (0,0,0)
         self.battle_transition = pg.Surface(resolution)
         self.battle_transition.fill(black)
+
+        # Character attributes.
+        self.level = 1
+        self.exp = 0
+        self.current_hp = 10
+        self.current_mp = 10
+        self.max_hp = 10
+        self.max_mp = 10
+        self.party_spawn = 1
+        self.speed = 3
+
+        self.slot_labels = { 1: ['ATTACK', 'SPIRIT BLAST'],
+                             2: ['BAG', '---'],
+                             3: ['RUN', '---'],
+                             4: ['SPELL', '---'] }
+
+        self.combat_descriptions = { 1: ['Attack the enemy with a basic attack. Low damage but free of resources.',
+                                         'A concentrated blast of spiritual energy. Low damage and mana cost.'],
+
+                                     2: ['Use an item in your bag to heal or temporarily boost your attributes.',
+                                         ''],
+
+                                     3: ['Attempt to run away from combat. Has a chance of failing. No experience awarded if successful.',
+                                         ''],
+
+                                     4: ['Attack the enemy with a spell of your choice. Spells require mana to cast.',
+                                         '']}
 
     # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
     # Created separately for organizational purposes.
@@ -344,17 +372,22 @@ class Fursa_sprite(pg.sprite.Sprite):
                     file.cd('Maps\Map_02')
                     battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
                     pg.mixer.music.play(loops = -1, start = 0.0)
-                    self.rect.centerx = map.battle_spawn_pos[1].centerx
-                    self.rect.centery = map.battle_spawn_pos[1].centery
-                    enemy.rect.centerx = map.battle_spawn_pos[4].centerx
-                    enemy.rect.centery = map.battle_spawn_pos[4].centery
                     self.frame_index = 0
-                    self.hp -= 1
                     self.hit = True
                     self.jump = False
                     self.battle = True
                     self.battle_forward = True
                     self.state = 0
+                    self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx
+                    self.rect.centery = map.battle_spawn_pos[self.party_spawn].centery
+                    enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
+                    enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
+
+            """ Battle Platform Layout.
+                                                      Midpoint for Ranged Attacks
+                                          Ally                       |                  Enemies
+
+    Spawn Location Indexes    ------0---------1-----------2----------6-----------4---------5--------6------"""
 
 
         """ ---------------------------- END OF BATTLE CODE -------------------------------"""
