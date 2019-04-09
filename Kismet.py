@@ -65,6 +65,8 @@ def main():
     black = (255,255,255)
     old_rects = [pg.Rect((0,0),(0,0))]
     fps_rect = [pg.Rect((1860,10),(50,50))]
+    ui_refresh = 0
+    ui_frames = []
 
     # Game Loop
     while True:
@@ -132,7 +134,7 @@ def main():
         #         pg.draw.rect(screen, black, rect)
 
         rects = character_rects + particle_rects + npc_rects + enemy_rects + fps_rect + current_map.refresh_rects
-        active_rects = rects + old_rects
+        active_rects = rects + old_rects + current_map.ui
 
         if current_map.map_first_time:
             pg.display.flip()

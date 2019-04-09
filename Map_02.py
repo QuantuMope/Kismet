@@ -21,6 +21,8 @@ class Map_02():
         self.spawny = 500
         self.map_first_time = True
         coordinates = []
+        self.refresh_rects = []
+        self.ui = []
 
         # Battle Scene.
         self.battle_map = TiledMap('battle_scene.tmx')
@@ -32,11 +34,16 @@ class Map_02():
         self.combat_box = pg.transform.scale(self.combat_box, (690,300))
         self.combat_box_rect = pg.Rect((720, 750), (690, 300))
         self.description_box = pg.transform.scale(self.combat_box, (460,300))
+        self.description_rect = pg.Rect((1410, 750), (460, 300))
         self.pointer = pg.image.load('black_triangle.png').convert_alpha()
         self.pointer = pg.transform.scale(self.pointer, (40,25))
         file.cd('UI\Fonts')
         self.combat_font = pg.freetype.Font('ferrum.otf', size = 24)
         self.hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size = 24)
+
+        self.battle_map.front_surface.blit(self.status_box, (50,750))
+        self.battle_map.front_surface.blit(self.combat_box, (720,750))
+        self.battle_map.front_surface.blit(self.description_box, (1410,750))
 
         white = (255,255,255)
         black = (0,0,0)
@@ -50,8 +57,10 @@ class Map_02():
                                  3: run_select,
                                  4: spell_select }
 
-        self.refresh_rects = []
-
+        self.combat_descriptions = { 1: 'Attack the enemy with a basic attack. Low damage but free of resources.',
+                                     2: 'Use an item in your bag to heal or temporarily boost your attributes.',
+                                     3: 'Attempt to run away from combat. Has a chance of failing. No experience awarded if successful.',
+                                     4: 'Attack the enemy with a spell of your choice. Spells require mana to cast.'}
         # Declare enemys.
         skeleton_01 = skeleton(enemy_frames, 600, 500)
         enemy_sprites.add(skeleton_01)
@@ -157,14 +166,41 @@ class Map_02():
         else:
             self.refresh_rects = []
 
+    def combat_descrip(self, text, screen):
+        load_text = ''
+        rep = 0
+        new_text = []
+        e = 0
+        i = 0
+        old_i = 0
+        while i <= len(text):
+            i = old_i + 25
+            if i <= len(text):
+                while text[i] != ' ':
+                    i += 1
+                    if i > old_i + 30:
+                        while text[i] != ' ':
+                            i -= 1
+                        break
+                new_text.append(text[e:i])
+                combat_text = new_text[rep]
+                combat_descrip, rect = self.dialog_font.render(combat_text)
+                screen.blit(combat_descrip, (1430, 800 + 50 * rep))
+                rep += 1
+                old_i = i
+                e = i + 1
+            else:
+                new_text.append(text[e:i])
+                combat_text = new_text[rep]
+                combat_descrip, rect = self.dialog_font.render(combat_text)
+                screen.blit(combat_descrip, (1430, 800 + 50 * rep))
+
     def battle_event(self, character, screen):
-        self.refresh_rects = [self.combat_box_rect]
+
         white = (255,255,255)
         black = (0,0,0)
         self.map = self.battle_map
-        screen.blit(self.status_box, (50,750))
-        screen.blit(self.combat_box, (720,750))
-        screen.blit(self.description_box, (1410,750))
+
         Fursa_name, rect = self.dialog_font.render('FURSA', fgcolor = black, size = 36)
         Fursa_lvl, rect = self.dialog_font.render('Lvl.1', fgcolor = black, size = 18)
         Fursa_HP, rect = self.dialog_font.render('HP:', fgcolor = (139,0,0), size = 30)
@@ -190,6 +226,10 @@ class Map_02():
 
         screen.blit(self.pointer, (self.battle_spawn_pos[1].x, self.battle_spawn_pos[1].y))
 
+        self.refresh_rects = []
+        self.ui = [self.combat_box_rect, self.description_rect]
+        self.combat_descrip(self.combat_descriptions[self.current_select], screen)
+
 
         """ 1 : Action | 2 : Bag      Action UI Selector goes by clockwise increasing state IDs.
             -----------------------
@@ -206,6 +246,7 @@ class Map_02():
                         self.current_select = 4
                         self.combat_selector[self.current_select] = white
                         self.dialog_noise.play()
+                        #self.combat_descrip(self.combat_descriptions[self.current_select], screen)
                     elif event.key == pg.K_d:
                         self.combat_selector[self.current_select] = black
                         self.current_select = 2
