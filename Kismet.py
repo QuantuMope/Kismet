@@ -129,7 +129,7 @@ def main():
         #TEST
         # if current_map.map_first_time:
         #     pass
-        # else:d
+        # else:
         #     for rect in active_rects:
         #         pg.draw.rect(screen, black, rect)
 
@@ -166,6 +166,7 @@ def main():
             battle_travel = True
         else:
             battle_travel =  False
+
 
 if __name__ == '__main__':
     main()

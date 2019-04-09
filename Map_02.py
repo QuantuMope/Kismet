@@ -53,6 +53,7 @@ class Map_02():
         self.current_slot = 1
         self.action_select = False
         self.pointer_frame = 0
+        self.battle_command = 0
         attack_select = white
         bag_select = black
         run_select = black
@@ -273,9 +274,6 @@ class Map_02():
                         self.current_slot = 1
                         self.combat_selector[self.current_slot] = white
                         self.dialog_noise.play()
-                    if self.current_slot == 1:
-                        if event.key == pg.K_r:
-                            self.dialog_noise.play()
 
                 else:
 
@@ -289,6 +287,9 @@ class Map_02():
                             self.combat_selector[self.current_slot] = black
                             self.current_slot = 2
                             self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif event.key == pg.K_r:
+                            self.battle_command = 1
                             self.dialog_noise.play()
                     elif self.current_slot == 4:
                         if event.key == pg.K_r and self.slot_labels[slot][self.action_select] != '---':

@@ -27,7 +27,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.fall_rate = 1
         self.jump_rate = 20
         self.jump_index = 0
-        self.speed = 1 # @pixel/frame. At approx 80 fps --> 80 pixel/sec
+        self.move = 1 # @pixel/frame. At approx 80 fps --> 80 pixel/sec
         self.jump = False
         self.attack = False
         self.frame_speed = 200
@@ -70,6 +70,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.max_mp = 10
         self.party_spawn = 1
         self.speed = 3
+        self.spell = False
 
         self.slot_labels = { 1: ['ATTACK', 'SPIRIT BLAST'],
                              2: ['BAG', '---'],
@@ -177,19 +178,19 @@ class Fursa_sprite(pg.sprite.Sprite):
         if self.attack == False:
             keys = pg.key.get_pressed()
             if keys[pg.K_d]:
-                self.rect.x += self.speed
+                self.rect.x += self.move
                 self.key_pressed = True  # Self.key_pressed() is fed back to change_state(). Found several times throughout handle_keys().
             elif keys[pg.K_a]:
-                self.rect.x -= self.speed
+                self.rect.x -= self.move
                 self.key_pressed = True
             # Running changes speed by holding down shift.
             # Self.shift is fed back to change_state().
             if keys[pg.K_LSHIFT]:
                 self.shift = True
-                self.speed = 2 * dt
+                self.move = 2 * dt
             else:
                 self.shift = False
-                self.speed = 1 * dt
+                self.move = 1 * dt
 
         # Pygame event loop.
         for event in pg.event.get():
@@ -213,7 +214,6 @@ class Fursa_sprite(pg.sprite.Sprite):
                 # Self.attack set to True prevents other key inputs to be registered until the animation is completed.
                 elif event.key == pg.K_r:
                     self.attack = True
-                    self.attack_charge.play()
 
                 # Jump input.
                 elif event.key == pg.K_SPACE:
@@ -255,11 +255,58 @@ class Fursa_sprite(pg.sprite.Sprite):
                         self.jump_index = 0
                         break
 
-    def change_state_battle(self):
-        pass
+    def change_state_battle(self, state_id):
+        if state_id == 1:
+            self.state = 1
+            self.frame_speed = 125
+            self.walking = True
+            self.running = False
+        elif state_id == 2:
+            self.state = 2
+            self.frame_speed = 100
+            self.walking = False
+            self.running = True
+        elif state_id == 3:
+            self.state = 3
+            self.frame_speed = 75
+            self.walking = False
+            self.running = False
+        elif state_id == 0:
+            self.state = 0
+            self.frame_speed = 200
+            self.walking = False
+            self.running = False
 
-    def battle_controls(self):
-        pass
+        self.current_images = self.all_images[self.state]
+
+    def battle_controls(self, map):
+        self.prev_state = self.state
+
+        if map.battle_command == 1:
+            if self.rect.right != map.battle_spawn_pos[4].left:
+                self.change_state_battle(2)
+                self.rect.x += 2
+            else:
+                self.attack = True
+                self.change_state_battle(3)
+        elif map.battle_command == 2:
+            if self.rect.centerx != map.battle_spawn_pos[6].centerx:
+                self.change_state_battle(2)
+                self.rect.x += 2
+            else:
+                self.spell = True
+                self.change_state_battle(3)
+        elif map.battle_command == 0:
+            if self.rect.centerx != map.battle_spawn_pos[self.party_spawn].centerx:
+                self.facing_right = False
+                self.change_state_battle(2)
+                self.rect.x -= 2
+            else:
+                self.facing_right = True
+                self.change_state_battle(0)
+
+        if self.prev_state != self.state:
+            self.frame_index = 0
 
     # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
     # Must be fed the blockers of the current map.
@@ -277,9 +324,7 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
         if map.battle is True:
-            self.state = 0
-            self.change_state_battle()
-            self.battle_controls()
+            self.battle_controls(map)
             if battle_travel:
                 self.battle_forward = False
         elif cutscene is False:
@@ -312,7 +357,10 @@ class Fursa_sprite(pg.sprite.Sprite):
             # Resets frame index if the max for a certain animation is reached.
             # Also, sets attack animation back to False in case the action was an attack.
             if self.frame_index == self.frame_maxes[self.state]:
+                if self.attack or self.spell:
+                    map.battle_command = 0
                 self.attack = False
+                self.spell = False
                 self.hit = False
                 self.frame_index = 0
 
@@ -334,10 +382,20 @@ class Fursa_sprite(pg.sprite.Sprite):
                 if self.frame_index == 4 or self.frame_index == 11:
                     self.walk_dirt.play()
 
-            elif self.attack == True and self.frame_index == 8:
-                self.attack_noise.play()
-                blast = Fursa_blast(particle_frames, self.facing_right, self.rect.x, self.rect.y)
-                particle_sprites.add(blast)
+            elif self.attack is True:
+                if self.frame_index == 1:
+                    self.attack_charge.play()
+                elif self.frame_index == 8:
+                    self.attack_noise.play()
+
+            elif self.spell == True:
+                if self.frame_index == 1:
+                    self.attack_charge.play()
+                    print('works')
+                elif self.frame_index == 8:
+                    self.attack_noise.play()
+                    blast = Fursa_blast(particle_frames, self.facing_right, self.rect.x, self.rect.y)
+                    particle_sprites.add(blast)
 
 
         """ ----------------------SKIP POS 1 ----------------------------------------
@@ -345,43 +403,44 @@ class Fursa_sprite(pg.sprite.Sprite):
          |  All code pertaining to transitioning into combat mode is located here.
          |  Each individual sprite's combat behavior is located in its own respective class.
         """
-        for enemy in enemy_sprites:
-            if enemy.attack:
-                if self.hitbox_rect.colliderect(enemy.rect) and enemy.frame_index == 8:
+        if map.battle is False:
+            for enemy in enemy_sprites:
+                if enemy.attack:
+                    if self.hitbox_rect.colliderect(enemy.rect) and enemy.frame_index == 8:
 
-                    self.image = self.all_images[6][2]
+                        self.image = self.all_images[6][2]
 
-                    # Transition screen.
-                    self.battle_impact_noise.play()
-                    pg.mixer.music.stop()
-                    enemy_sprites.draw(screen)
-                    character_sprites.draw(screen)
-                    screen.blit(map.map.front_surface, (0,0))
-                    pg.display.flip()
-                    pg.time.wait(1000)
-                    screen.blit(self.battle_transition, (0,0))
-                    enemy_sprites.draw(screen)
-                    character_sprites.draw(screen)
-                    pg.display.flip()
-                    self.battle_sword_aftersound.play()
-                    pg.time.wait(1000)
+                        # Transition screen.
+                        self.battle_impact_noise.play()
+                        pg.mixer.music.stop()
+                        enemy_sprites.draw(screen)
+                        character_sprites.draw(screen)
+                        screen.blit(map.map.front_surface, (0,0))
+                        pg.display.flip()
+                        pg.time.wait(1000)
+                        screen.blit(self.battle_transition, (0,0))
+                        enemy_sprites.draw(screen)
+                        character_sprites.draw(screen)
+                        pg.display.flip()
+                        self.battle_sword_aftersound.play()
+                        pg.time.wait(1000)
 
-                    # Spawn and music start.
-                    self.facing_right = True
-                    enemy.facing_right = False
-                    file.cd('Maps\Map_02')
-                    battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
-                    pg.mixer.music.play(loops = -1, start = 0.0)
-                    self.frame_index = 0
-                    self.hit = True
-                    self.jump = False
-                    self.battle = True
-                    self.battle_forward = True
-                    self.state = 0
-                    self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx
-                    self.rect.centery = map.battle_spawn_pos[self.party_spawn].centery
-                    enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
-                    enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
+                        # Spawn and music start.
+                        self.facing_right = True
+                        enemy.facing_right = False
+                        file.cd('Maps\Map_02')
+                        battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
+                        pg.mixer.music.play(loops = -1, start = 0.0)
+                        self.frame_index = 0
+                        self.hit = True
+                        self.jump = False
+                        self.battle = True
+                        self.battle_forward = True
+                        self.state = 0
+                        self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx
+                        self.rect.centery = map.battle_spawn_pos[self.party_spawn].centery
+                        enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
+                        enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
 
             """ Battle Platform Layout.
                                                       Midpoint for Ranged Attacks
@@ -433,14 +492,14 @@ class blast_frames():
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_ss = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
-        self.blast_images_r = [pg.transform.scale(blast_images_separate[i], (48, 48)) for i in range(0, len(blast_images_separate))]
+        self.blast_images_r = [pg.transform.scale(blast_images_separate[i], (64, 64)) for i in range(0, len(blast_images_separate))]
         self.blast_images_l = [pg.transform.flip(self.blast_images_r[i], True, False) for i in range(0, len(self.blast_images_r))]
 
         # Impact frames.
         coordinates = [(0, 128 * i, 128, 128) for i in range(0,8)]
         impact_images_ss = spritesheet('energyBallImpact.png')
         impact_images_separate = impact_images_ss.images_at(coordinates, colorkey = (0, 0, 0))
-        self.impact_images_r = [pg.transform.scale(impact_images_separate[i], (48, 48)) for i in range(0, len(impact_images_separate))]
+        self.impact_images_r = [pg.transform.scale(impact_images_separate[i], (64, 64)) for i in range(0, len(impact_images_separate))]
         self.impact_images_l = [pg.transform.flip(self.impact_images_r[i], True, False) for i in range(0, len(self.impact_images_r))]
 
         self.frames = [self.blast_images_r, self.blast_images_l, self.impact_images_r, self.impact_images_l]
@@ -457,11 +516,11 @@ class Fursa_blast(pg.sprite.Sprite):
         self.flowing_right = True if Fursa_facing_right else False
 
         if self.flowing_right:
-            self.rect = pg.Rect(Fursa_x + 70, Fursa_y + 52, 64, 64)
+            self.rect = pg.Rect(Fursa_x + 70, Fursa_y + 44, 64, 64)
             self.images = self.blast_images_r
             self.impact = self.impact_images_r
         else:
-            self.rect = pg.Rect(Fursa_x + 20, Fursa_y + 52, 64, 64)
+            self.rect = pg.Rect(Fursa_x + 20, Fursa_y + 44, 64, 64)
             self.images = self.blast_images_l
             self.impact = self.impact_images_l
 
@@ -484,9 +543,9 @@ class Fursa_blast(pg.sprite.Sprite):
         # Once blast is spawned by Fursa, will keep traveling across map until it hits the
         # right of left edge of the map in which case the sprite will be killed.
         if self.particle_hit is False and self.flowing_right:
-            self.rect.x += 4 * dt
+            self.rect.x += 3 * dt
         else:
-            self.rect.x -= 4 * dt
+            self.rect.x -= 3 * dt
 
         self.image = self.images[self.i] # Frame changing.
         self.i += 1

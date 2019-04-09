@@ -42,6 +42,7 @@ class Map_01():
         self.portal_rect = pg.Rect(1115,660,160,160)
 
         self.refresh_rects = [self.portal_rect]
+        self.ui = []
 
         self.end_sounds = [self.portal_aura]
 
