@@ -3,6 +3,7 @@ from directory_change import files
 from spritesheet import spritesheet
 from TiledMap import TiledMap
 from enemies import skeleton, enemy_frames
+from operator import itemgetter
 
 # Area 2
 class Map_02():
@@ -21,8 +22,6 @@ class Map_02():
         self.spawny = 500
         self.map_first_time = True
         coordinates = []
-        self.refresh_rects = []
-        self.ui = []
 
         # Battle Scene.
         self.battle_map = TiledMap('battle_scene.tmx')
@@ -46,7 +45,13 @@ class Map_02():
         self.battle_map.front_surface.blit(self.combat_box, (720,750))
         self.battle_map.front_surface.blit(self.description_box, (1410,750))
 
+        self.refresh_rects = []
+        self.ui = []
+        self.refresh_rects = [pg.Rect((spawn.centerx - 30, spawn.y + 80), (60, 60)) for spawn in self.battle_spawn_pos]
+
+
         self.battle_init = True
+        self.turn_order = []
 
         white = (255,255,255)
         black = (0,0,0)
@@ -54,6 +59,9 @@ class Map_02():
         self.action_select = False
         self.pointer_frame = 0
         self.battle_command = 0
+        self.animation_complete = True
+        self.returned = True
+        self.change_turn = False
         attack_select = white
         bag_select = black
         run_select = black
@@ -200,6 +208,7 @@ class Map_02():
     def battle_event(self, character, enemy_sprites, screen):
         self.slot_labels = character.slot_labels
         self.combat_descriptions = character.combat_descriptions
+        self.refresh_rects = [pg.Rect((spawn.centerx - 30, spawn.y + 80), (60, 60)) for spawn in self.battle_spawn_pos]
         white = (255,255,255)
         black = (0,0,0)
         self.map = self.battle_map
@@ -225,37 +234,46 @@ class Map_02():
                            (1150 - int((rect.width - 150)/2), 930), (850 - int((rect.width - 150)/2), 930)]
             screen.blit(slot_button, coordinates[slot - 1])
 
-
-        self.refresh_rects = []
         self.ui = [self.combat_box_rect, self.description_rect]
         self.combat_descrip(self.combat_descriptions[self.current_slot][self.action_select], screen)
 
         # Initializing battle parameters.
         if self.battle_init:
             self.turn_i = 0
-            # Turn order based on speed. *WARNING Very preliminary. Rough code for simple functionality.
-            # Will have to completely revamp once additional sprites are added.
             for enemy in enemy_sprites:
-                if character.speed > enemy.speed:
-                    self.turn_order = [character.party_spawn, enemy.party_spawn]
-                else:
-                    self.turn_order = [enemy.party_spawn, character.party_spawn]
+                self.turn_order.append(enemy.turn_determiner)
+            self.turn_order.append(character.turn_determiner)
+            self.turn_order = sorted(self.turn_order, key = itemgetter(1), reverse = True)
+            # turn_determiner = [ spawn location, speed ]
+
+            self.current_turn = self.turn_order[self.turn_i][0]
             self.battle_init = False
 
-
         # Turn and enemy selection pointer.
-        if self.pointer_frame <= 30:
-            self.pointer_frame += 1
-            screen.blit(self.pointer, (self.battle_spawn_pos[self.turn_order[self.turn_i]].centerx - self.point_rect.width / 2,
-                                       self.battle_spawn_pos[self.turn_order[self.turn_i]].centery + 80))
-        elif self.pointer_frame <= 60:
-            self.pointer_frame += 1
-            screen.blit(self.pointer, (self.battle_spawn_pos[self.turn_order[self.turn_i]].centerx - self.point_rect.width / 2,
-                                       self.battle_spawn_pos[self.turn_order[self.turn_i]].centery + 90))
-        else:
-            self.pointer_frame = 0
-            screen.blit(self.pointer, (self.battle_spawn_pos[self.turn_order[self.turn_i]].centerx - self.point_rect.width / 2,
-                                       self.battle_spawn_pos[self.turn_order[self.turn_i]].centery + 80))
+        if self.animation_complete is True and self.change_turn is False:
+            if self.pointer_frame <= 30:
+                self.pointer_frame += 1
+                screen.blit(self.pointer, (self.battle_spawn_pos[self.current_turn].centerx - self.point_rect.width / 2,
+                                           self.battle_spawn_pos[self.current_turn].centery + 80))
+            elif self.pointer_frame <= 60:
+                self.pointer_frame += 1
+                screen.blit(self.pointer, (self.battle_spawn_pos[self.current_turn].centerx - self.point_rect.width / 2,
+                                           self.battle_spawn_pos[self.current_turn].centery + 90))
+            else:
+                self.pointer_frame = 0
+                screen.blit(self.pointer, (self.battle_spawn_pos[self.current_turn].centerx - self.point_rect.width / 2,
+                                           self.battle_spawn_pos[self.current_turn].centery + 80))
+        elif self.animation_complete is False and self.change_turn is False:
+            print('index increase')
+            self.turn_i += 1
+            self.change_turn = True
+            if self.turn_i == len(self.turn_order):
+                self.turn_i = 0
+        elif self.animation_complete is True and self.battle_command == 0:
+            self.animation_complete = True
+            self.change_turn = False
+            self.current_turn = (self.turn_order[self.turn_i])[0]
+            print('current index is ' + str(self.current_turn))
 
 
         """ 1 : Action | 2 : Bag      Action UI Selector goes by clockwise slots increasing state IDs.
@@ -267,69 +285,78 @@ class Map_02():
         for event in pg.event.get():
             # Allow to quit game. Included in this portion to be able to keep only one event loop.
             if event.type == pg.KEYDOWN:
-                if self.action_select is True:
-                    if event.key == pg.K_e:
-                        self.action_select = False
-                        self.combat_selector[self.current_slot] = black
-                        self.current_slot = 1
-                        self.combat_selector[self.current_slot] = white
-                        self.dialog_noise.play()
+                if self.current_turn <= 2: # If it is an ally character's turn, allow keyboard input.
 
-                else:
+                    if self.action_select is True:
+                        if event.key == pg.K_e:
+                            self.action_select = False
+                            self.combat_selector[self.current_slot] = black
+                            self.current_slot = 1
+                            self.combat_selector[self.current_slot] = white
+                            self.dialog_noise.play()
+                        elif self.current_slot == 1:
+                            if event.key == pg.K_r:
+                                self.battle_command = 2
+                                self.action_select = False
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 1
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                    else:
 
-                    if self.current_slot == 1:
-                        if event.key == pg.K_s and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 4
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                        elif event.key == pg.K_d and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 2
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                        elif event.key == pg.K_r:
-                            self.battle_command = 1
-                            self.dialog_noise.play()
-                    elif self.current_slot == 4:
-                        if event.key == pg.K_r and self.slot_labels[slot][self.action_select] != '---':
-                            self.action_select = True
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 1
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                        elif event.key == pg.K_w and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 1
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                        elif event.key == pg.K_d and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 3
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                    elif self.current_slot == 2:
-                        if event.key == pg.K_a and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 1
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                        elif event.key == pg.K_s and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 3
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                    elif self.current_slot == 3:
-                        if event.key == pg.K_a and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 4
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
-                        elif event.key == pg.K_w and self.slot_labels[slot][self.action_select] != '---':
-                            self.combat_selector[self.current_slot] = black
-                            self.current_slot = 2
-                            self.combat_selector[self.current_slot] = white
-                            self.dialog_noise.play()
+                        if self.current_slot == 1:
+                            if event.key == pg.K_s and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 4
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                            elif event.key == pg.K_d and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 2
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                            elif event.key == pg.K_r:
+                                self.battle_command = 1
+                                self.dialog_noise.play()
+                        elif self.current_slot == 4:
+                            if event.key == pg.K_r and self.slot_labels[slot][self.action_select] != '---':
+                                self.action_select = True
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 1
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                            elif event.key == pg.K_w and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 1
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                            elif event.key == pg.K_d and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 3
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                        elif self.current_slot == 2:
+                            if event.key == pg.K_a and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 1
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                            elif event.key == pg.K_s and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 3
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                        elif self.current_slot == 3:
+                            if event.key == pg.K_a and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 4
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
+                            elif event.key == pg.K_w and self.slot_labels[slot][self.action_select] != '---':
+                                self.combat_selector[self.current_slot] = black
+                                self.current_slot = 2
+                                self.combat_selector[self.current_slot] = white
+                                self.dialog_noise.play()
 
                 if event.key == pg.K_ESCAPE:
                      pg.quit()

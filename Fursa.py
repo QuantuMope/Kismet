@@ -68,9 +68,12 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.current_mp = 10
         self.max_hp = 10
         self.max_mp = 10
-        self.party_spawn = 1
+        self.party_spawn = 2
         self.speed = 3
         self.spell = False
+        self.turn = False
+
+        self.turn_determiner = [self.party_spawn, self.speed]
 
         self.slot_labels = { 1: ['ATTACK', 'SPIRIT BLAST'],
                              2: ['BAG', '---'],
@@ -282,28 +285,37 @@ class Fursa_sprite(pg.sprite.Sprite):
     def battle_controls(self, map):
         self.prev_state = self.state
 
-        if map.battle_command == 1:
-            if self.rect.right != map.battle_spawn_pos[4].left:
-                self.change_state_battle(2)
-                self.rect.x += 2
-            else:
-                self.attack = True
-                self.change_state_battle(3)
-        elif map.battle_command == 2:
-            if self.rect.centerx != map.battle_spawn_pos[6].centerx:
-                self.change_state_battle(2)
-                self.rect.x += 2
-            else:
-                self.spell = True
-                self.change_state_battle(3)
-        elif map.battle_command == 0:
-            if self.rect.centerx != map.battle_spawn_pos[self.party_spawn].centerx:
-                self.facing_right = False
-                self.change_state_battle(2)
-                self.rect.x -= 2
-            else:
-                self.facing_right = True
-                self.change_state_battle(0)
+        if map.current_turn == self.party_spawn:
+            # Melee attack animation.
+            if map.battle_command == 1:
+                map.animation_complete = False
+                if self.rect.right <= map.battle_spawn_pos[4].left:
+                    self.change_state_battle(2)
+                    self.rect.x += 2
+                else:
+                    self.attack = True
+                    self.change_state_battle(3)
+
+            # Spell animation.
+            elif map.battle_command == 2:
+                map.animation_complete = False
+                if self.rect.centerx <= map.battle_spawn_pos[6].centerx:
+                    self.change_state_battle(2)
+                    self.rect.x += 2
+                else:
+                    self.spell = True
+                    self.change_state_battle(3)
+
+            # Return to position animation.
+            elif map.battle_command == 0:
+                if self.rect.centerx >= map.battle_spawn_pos[self.party_spawn].centerx:
+                    self.facing_right = False
+                    self.change_state_battle(2)
+                    self.rect.x -= 2
+                else:
+                    self.facing_right = True
+                    self.change_state_battle(0)
+                    map.animation_complete = True
 
         if self.prev_state != self.state:
             self.frame_index = 0
@@ -391,7 +403,6 @@ class Fursa_sprite(pg.sprite.Sprite):
             elif self.spell == True:
                 if self.frame_index == 1:
                     self.attack_charge.play()
-                    print('works')
                 elif self.frame_index == 8:
                     self.attack_noise.play()
                     blast = Fursa_blast(particle_frames, self.facing_right, self.rect.x, self.rect.y)

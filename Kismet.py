@@ -62,7 +62,7 @@ def main():
     map_index = 0
     map_travel = False
     battle_travel =  False
-    black = (255,255,255)
+    black = (0, 0 , 0)
     old_rects = [pg.Rect((0,0),(0,0))]
     fps_rect = [pg.Rect((1860,10),(50,50))]
     ui_refresh = 0
@@ -94,7 +94,7 @@ def main():
 
         # Layer 3----------------------------------------------------------------------------------------------------- Enemy sprites update
 
-        enemy_sprites.update(current_map.map.blockers, time, Fursa, particle_sprites)
+        enemy_sprites.update(current_map.map.blockers, time, current_map, Fursa, particle_sprites)
         enemy_sprites.draw(screen)
         enemy_rects = [enemy.refresh_rect for enemy in enemy_sprites.sprites()]
 
@@ -130,7 +130,7 @@ def main():
         # if current_map.map_first_time:
         #     pass
         # else:
-        #     for rect in active_rects:
+        #     for rect in current_map.refresh_rects:
         #         pg.draw.rect(screen, black, rect)
 
         rects = character_rects + particle_rects + npc_rects + enemy_rects + fps_rect + current_map.refresh_rects

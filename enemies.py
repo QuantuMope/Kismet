@@ -41,6 +41,10 @@ class skeleton(pg.sprite.Sprite):
         # Combat attributes.
         self.speed = 1
         self.party_spawn = 4
+        self.turn = False
+        self.first_attack = True
+
+        self.turn_determiner = [self.party_spawn, self.speed]
 
         file.cd("Enemies\Skeleton")
         self.swing_sound = pg.mixer.Sound('swing.wav')
@@ -67,14 +71,9 @@ class skeleton(pg.sprite.Sprite):
                     else:
                         self.rect.x -= 1
 
-            # for block in blockers:
-            #     if self.rect.left <= block.left or self.rect.right >= block.right:
-            #         self.state == 0
-
             # If within aggro range, switch animation to react.
             if abs(self.rect.centerx - character.rect.centerx) < 200 and not self.aggroed:
-                self.frame_speed = 400
-                self.state = 2
+                self.change_state_battle(2)
                 self.aggroed = True
                 self.frame_index = 0
 
@@ -86,8 +85,7 @@ class skeleton(pg.sprite.Sprite):
             # When aggroed and reaction is done, move towards the player.
             if self.attack == False:
                 if self.aggroed and self.chase:
-                    self.state = 1
-                    self.frame_speed = 100
+                    self.change_state_battle(1)
                     if (self.rect.centerx - character.rect.centerx) > 0:
                         self.facing_right = False
                         self.rect.x -= 1
@@ -98,16 +96,14 @@ class skeleton(pg.sprite.Sprite):
             # Start attack animation.
             if abs(self.rect.centerx - character.rect.centerx) < 100 and self.chase:
                 self.attack = True
-                self.frame_speed = 100
-                self.state = 3
+                self.change_state_battle(3)
 
             for particle in particle_sprites:
                 if particle.particle_hit is True:
+                    self.change_state_battle(4)
                     self.chase = True
                     self.aggroed = True
                     self.hit = True
-                    self.frame_speed = 150
-                    self.state = 4
                     self.hp -= 1
 
         if self.hp <= 0:
@@ -117,6 +113,26 @@ class skeleton(pg.sprite.Sprite):
             self.change_state = True
             self.pstate = self.prev_state
             self.cstate = self.state
+
+    def change_state_battle(self, state_id):
+        if state_id == 0:
+            self.state = 0
+            self.frame_speed = 100
+        elif state_id == 1:
+            self.state = 1
+            self.frame_speed = 100
+        elif state_id == 2:
+            self.state = 2
+            self.frame_speed = 400
+        elif state_id == 3:
+            self.state = 3
+            self.frame_speed = 100
+        elif state_id == 4:
+            self.state = 4
+            self.frame_speed = 150
+        elif state_id == 5:
+            self.state = 6
+            self.frame_speed = 150
 
     def change_rect_by_state(self, old_state, new_state, self_facing):
         self.frame_index = 0
@@ -132,10 +148,35 @@ class skeleton(pg.sprite.Sprite):
         self.rect.y -= y_dt
         if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt
 
-    def battle(self):
-        pass
+    def battle(self, map):
+        if map.current_turn == self.party_spawn and self.first_attack:
+            map.battle_command = 1
+            self.first_attack = False
 
-    def update(self, blockers, time, character, particle_sprites):
+        if map.current_turn == self.party_spawn:
+            map.animation_complete = False
+            print('map battle command is' + str(map.battle_command))
+            if map.battle_command == 1:
+                if self.rect.left >= map.battle_spawn_pos[2].right:
+                    self.change_state_battle(1)
+                    self.rect.x -= 2
+                else:
+                    self.change_state_battle(3)
+                    self.attack = True
+
+            elif map.battle_command == 0:
+                if self.rect.centerx <= map.battle_spawn_pos[self.party_spawn].centerx:
+                    self.facing_right = True
+                    self.change_state_battle(1)
+                    self.rect.x += 2
+                else:
+                    self.facing_right = False
+                    self.change_state_battle(0)
+                    map.animation_complete = True
+
+
+
+    def update(self, blockers, time, map, character, particle_sprites):
 
         self.refresh_rect = pg.Rect((self.rect.x - 30, self.rect.y), (128, 128))
 
@@ -143,7 +184,7 @@ class skeleton(pg.sprite.Sprite):
             self.AI(blockers, time, character, particle_sprites)
         else:
             self.state = 0
-            self.battle()
+            self.battle(map)
 
         # Frame update and flipping.
 
@@ -174,6 +215,8 @@ class skeleton(pg.sprite.Sprite):
                 elif self.state == 5:
                     self.kill()
                 else:
+                    if self.attack:
+                        map.battle_command = 0
                     self.attack = False
                     self.hit = False
                     self.frame_index = 0
