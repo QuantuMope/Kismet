@@ -13,7 +13,7 @@ class skeleton(pg.sprite.Sprite):
         self.prev_state = 0
         self.state = 0
         self.rect = pg.Rect(spawnx, spawny, 72, 96)
-        self.hitbox_rect = None
+        self.hitbox_rect = pg.Rect((self.rect.x + 30, self.rect.y - 30), (72, 96))
         self.refresh_rect = pg.Rect((self.rect.x - 30, self.rect.y), (128, 128))
 
         # States
@@ -37,12 +37,14 @@ class skeleton(pg.sprite.Sprite):
         self.hit = False
         self.hp = 3
         self.on_ground = False
+        self.turn = False
 
         # Combat attributes.
         self.speed = 1
         self.party_spawn = 4
         self.turn = False
         self.first_attack = True
+        self.hit_done = False
 
         self.turn_determiner = [self.party_spawn, self.speed]
 
@@ -129,9 +131,9 @@ class skeleton(pg.sprite.Sprite):
             self.frame_speed = 100
         elif state_id == 4:
             self.state = 4
-            self.frame_speed = 150
+            self.frame_speed = 125
         elif state_id == 5:
-            self.state = 6
+            self.state = 5
             self.frame_speed = 150
 
     def change_rect_by_state(self, old_state, new_state, self_facing):
@@ -146,18 +148,25 @@ class skeleton(pg.sprite.Sprite):
         self.rect.width = old_size_x + x_dt
         self.rect.height = old_size_y + y_dt
         self.rect.y -= y_dt
-        if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt
+        if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt + 10
 
-    def battle(self, map):
+
+    def battle(self, map, particle_sprites):
+        self.prev_state = self.state
+
+        for particle in particle_sprites:
+            if particle.hitbox_rect.collidepoint((self.hitbox_rect.x + self.hitbox_rect.width/2),(self.hitbox_rect.y + self.hitbox_rect.height/2)):
+                self.change_state_battle(4)
+                self.frame_index = 0
+
         if map.current_turn == self.party_spawn and self.first_attack:
             map.battle_command = 1
             self.first_attack = False
 
-        if map.current_turn == self.party_spawn:
+        if map.current_turn == self.party_spawn and self.hit_done is True:
             map.animation_complete = False
-            print('map battle command is' + str(map.battle_command))
             if map.battle_command == 1:
-                if self.rect.left >= map.battle_spawn_pos[2].right:
+                if self.rect.left >= map.battle_spawn_pos[2].right + 40:
                     self.change_state_battle(1)
                     self.rect.x -= 2
                 else:
@@ -173,18 +182,34 @@ class skeleton(pg.sprite.Sprite):
                     self.facing_right = False
                     self.change_state_battle(0)
                     map.animation_complete = True
+                    self.first_attack = True
+                    self.hit_done = False
 
+        if self.prev_state != self.state:
+            self.change_state = True
+            self.pstate = self.prev_state
+            self.cstate = self.state
 
 
     def update(self, blockers, time, map, character, particle_sprites):
 
-        self.refresh_rect = pg.Rect((self.rect.x - 30, self.rect.y), (128, 128))
+        self.refresh_rect = pg.Rect((self.rect.x - 128, self.rect.y - 64), (256, 256))
+
+        if self.facing_right:
+            if self.state == 3:
+                self.hitbox_rect = pg.Rect((self.rect.x, self.rect.y + 40), (52, 72))
+            else:
+                self.hitbox_rect = pg.Rect((self.rect.x, self.rect.y + 25), (52, 72))
+        else:
+            if self.state == 3:
+                self.hitbox_rect = pg.Rect((self.rect.x + 70, self.rect.y + 40), (52, 72))
+            else:
+                self.hitbox_rect = pg.Rect((self.rect.x + 20, self.rect.y + 25), (52, 72))
 
         if character.battle is False:
             self.AI(blockers, time, character, particle_sprites)
         else:
-            self.state = 0
-            self.battle(map)
+            self.battle(map, particle_sprites)
 
         # Frame update and flipping.
 
@@ -201,10 +226,16 @@ class skeleton(pg.sprite.Sprite):
                 self.image = self.current_images[self.frame_index]
                 self.frame_index += 1
                 self.frame_override = True
+                if self.turn is True:
+                    self.rect.x += 50
+                    self.turn = False
             else:
                 self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
                 self.frame_index += 1
                 self.frame_override = False
+                if self.turn is False:
+                    self.rect.x -= 20
+                    self.turn = True
 
             if self.state == 3 and self.frame_index == 7:
                 self.swing_sound.play()
@@ -214,12 +245,21 @@ class skeleton(pg.sprite.Sprite):
                     pass
                 elif self.state == 5:
                     self.kill()
+                elif self.state == 4:
+                    self.hit_done = True
+                    self.frame_index = 0
                 else:
                     if self.attack:
                         map.battle_command = 0
                     self.attack = False
-                    self.hit = False
                     self.frame_index = 0
+
+        if map.battle is False:
+            if self.attack:
+                if character.hitbox_rect.colliderect(self.rect) and self.frame_index == 8:
+                    self.state = 0
+                    self.rect.width = 72
+                    self.rect.height = 96
 
 
         # Gravity emulation with current map blockers.
@@ -237,8 +277,13 @@ class skeleton(pg.sprite.Sprite):
             if (time - self.gravity_dt) >= 20:
                 self.gravity_dt = time
                 self.fall_rate *= 1.1 # Acceleration rate.
+                start_fall = self.rect.y
                 for i in range(int(self.fall_rate)):
                     self.rect.y += 1
+                    self.hitbox_rect.y += 1
+                    # end_fall = self.rect.y
+                    # if (end_fall - start_fall) > 256:
+                    #     pg.display.update(self.refresh_rect)
                     # Halts falling when Fursa lands on a block.
                     for block in blockers:
                         if self.rect.colliderect(block):

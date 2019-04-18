@@ -453,6 +453,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                         enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
                         enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
 
+
             """ Battle Platform Layout.
                                                       Midpoint for Ranged Attacks
                                           Ally                       |                  Enemies
@@ -550,6 +551,7 @@ class Fursa_blast(pg.sprite.Sprite):
         dt = normalized_dt
 
         self.refresh_rect = pg.Rect((self.rect.x - 16, self.rect.y - 16), (96, 96))
+        self.hitbox_rect = pg.Rect((self.rect.x + 10, self.rect.y + 20), (48, 20))
 
         # Once blast is spawned by Fursa, will keep traveling across map until it hits the
         # right of left edge of the map in which case the sprite will be killed.
@@ -575,9 +577,5 @@ class Fursa_blast(pg.sprite.Sprite):
                 self.particle_hit = False
 
         for enemy in enemy_sprites:
-            if self.flow_right:
-                if self.rect.collidepoint(enemy.rect.x + 50, enemy.rect.centery + 20):
-                    self.particle_hit = True
-            elif self.flow_right is False:
-                if self.rect.collidepoint(enemy.rect.x + 20, enemy.rect.centery + 20):
-                    self.particle_hit = True
+            if self.hitbox_rect.collidepoint((enemy.hitbox_rect.x + enemy.hitbox_rect.width/2),(enemy.hitbox_rect.y + enemy.hitbox_rect.height/2)):
+                self.particle_hit = True

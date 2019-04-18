@@ -62,7 +62,7 @@ def main():
     map_index = 0
     map_travel = False
     battle_travel =  False
-    black = (0, 0 , 0)
+    black = (0, 0, 0)
     old_rects = [pg.Rect((0,0),(0,0))]
     fps_rect = [pg.Rect((1860,10),(50,50))]
     ui_refresh = 0
@@ -86,19 +86,15 @@ def main():
             for rect in active_rects:
                 screen.blit(current_map.map.back_surface, rect, rect)
 
-        # Layer 2------------------------------------------------------------------------------------------- Particle sprites update.
-
-        particle_sprites.update(Fursa, dt, particle_sprites, enemy_sprites)
-        particle_sprites.draw(screen)
-        particle_rects = [particle.refresh_rect for particle in particle_sprites.sprites()]
-
-        # Layer 3----------------------------------------------------------------------------------------------------- Enemy sprites update
+        # Layer 2----------------------------------------------------------------------------------------------------- Enemy sprites update
 
         enemy_sprites.update(current_map.map.blockers, time, current_map, Fursa, particle_sprites)
+        # for enemy in enemy_sprites:
+        #     pg.draw.rect(screen, black, enemy.hitbox_rect)
         enemy_sprites.draw(screen)
         enemy_rects = [enemy.refresh_rect for enemy in enemy_sprites.sprites()]
 
-        # Layer 4--------------------------------------------------------------------------------------------------- Character sprites update.
+        # Layer 3--------------------------------------------------------------------------------------------------- Character sprites update.
 
         character_sprites.update(current_map.map.blockers, time, dt, current_map.cutscene, screen,
                                  current_map, map_travel, battle_travel, character_sprites, enemy_sprites, particle_sprites, blast_particle_frames.frames, fi)
@@ -106,11 +102,20 @@ def main():
         character_sprites.draw(screen)
         character_rects = [Fursa.refresh_rect]
 
-        # Layer 5--------------------------------------------------------------------------------------------------------- NPC sprites update.
+        # Layer 4--------------------------------------------------------------------------------------------------------- NPC sprites update.
 
         npc_sprites.update(current_map.map.blockers, time)
         npc_sprites.draw(screen)
         npc_rects = [npc.rect for npc in npc_sprites.sprites()]
+
+        # Layer 5------------------------------------------------------------------------------------------- Particle sprites update.
+
+        particle_sprites.update(Fursa, dt, particle_sprites, enemy_sprites)
+        # for particle in particle_sprites:
+        #     pg.draw.rect(screen, black, particle.hitbox_rect)
+        particle_sprites.draw(screen)
+        particle_rects = [particle.refresh_rect for particle in particle_sprites.sprites()]
+
 
         # Layer 6----------------------------------------------------------------------------------------------- Screen background front surface refresh.
 
