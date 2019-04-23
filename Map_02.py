@@ -264,7 +264,6 @@ class Map_02():
                 screen.blit(self.pointer, (self.battle_spawn_pos[self.current_turn].centerx - self.point_rect.width / 2,
                                            self.battle_spawn_pos[self.current_turn].centery + 80))
         elif self.animation_complete is False and self.change_turn is False:
-            print('index increase')
             self.turn_i += 1
             self.change_turn = True
             if self.turn_i == len(self.turn_order):
@@ -273,7 +272,6 @@ class Map_02():
             self.animation_complete = True
             self.change_turn = False
             self.current_turn = (self.turn_order[self.turn_i])[0]
-            print('current index is ' + str(self.current_turn))
 
 
         """ 1 : Action | 2 : Bag      Action UI Selector goes by clockwise slots increasing state IDs.

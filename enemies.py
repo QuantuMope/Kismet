@@ -45,6 +45,7 @@ class skeleton(pg.sprite.Sprite):
         self.turn = False
         self.first_attack = True
         self.hit_done = False
+        self.first_hit = False
 
         self.turn_determiner = [self.party_spawn, self.speed]
 
@@ -138,7 +139,7 @@ class skeleton(pg.sprite.Sprite):
 
     def change_rect_by_state(self, old_state, new_state, self_facing):
         self.frame_index = 0
-        sizes = [(72,96), (66,99), (66,96), (129,111), (90,96), (99,96)]
+        sizes = [(72,96), (66,99), (66,96), (129,111), (85,96), (99,96)]
         old_size_x = sizes[old_state][0]
         new_size_x = sizes[new_state][0]
         old_size_y = sizes[old_state][1]
@@ -151,13 +152,22 @@ class skeleton(pg.sprite.Sprite):
         if self.facing_right is not True and new_state != 4: self.rect.x -= x_dt + 10
 
 
-    def battle(self, map, particle_sprites):
+    def battle(self, map, character, particle_sprites):
         self.prev_state = self.state
 
         for particle in particle_sprites:
             if particle.hitbox_rect.collidepoint((self.hitbox_rect.x + self.hitbox_rect.width/2),(self.hitbox_rect.y + self.hitbox_rect.height/2)):
                 self.change_state_battle(4)
                 self.frame_index = 0
+
+        if character.attack is True and self.first_hit is False:
+            if character.rect.colliderect(self.hitbox_rect) and character.frame_index == 8:
+                self.change_state_battle(4)
+                self.frame_index = 0
+                self.first_hit = True
+
+        if map.current_turn != self.party_spawn and self.hit_done is True:
+            self.change_state_battle(0)
 
         if map.current_turn == self.party_spawn and self.first_attack:
             map.battle_command = 1
@@ -184,6 +194,7 @@ class skeleton(pg.sprite.Sprite):
                     map.animation_complete = True
                     self.first_attack = True
                     self.hit_done = False
+                    self.first_hit = False
 
         if self.prev_state != self.state:
             self.change_state = True
@@ -209,7 +220,7 @@ class skeleton(pg.sprite.Sprite):
         if character.battle is False:
             self.AI(blockers, time, character, particle_sprites)
         else:
-            self.battle(map, particle_sprites)
+            self.battle(map, character, particle_sprites)
 
         # Frame update and flipping.
 
