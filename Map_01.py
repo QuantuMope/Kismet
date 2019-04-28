@@ -15,6 +15,7 @@ class Map_01():
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
         pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
+        self.blockers = self.map.blockers
         self.cutscene = False
         self.first_stage = True
         self.battle = False

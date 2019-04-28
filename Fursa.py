@@ -1,36 +1,36 @@
-from spritesheet import spritesheet
 from directory_change import files
 import pygame as pg
+from Fursa_projectiles import SPIRIT_BLAST, blast_frames
 
-# Fursa sprite. The main character of the game.
+
+# Fursa sprite. The main character of the game
+# Contains the pygame eventloop for non-cutscenes and non-battles.
 class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
+
+        # Initialize frame parameters. Frames are uploaded once using upload_frames.
         super().__init__()
         file = files()
         self.frame_index = 0
-        self.upload_frames(file) # Uploads all frames. Function found below.
-        self.current_images = self.all_images[0]
-        self.image = self.current_images[0]
+        self.upload_frames(file)
+        self.current_frames = self.all_frames[0]
+        self.image = self.current_frames[0]
         self.prev_state = 0
         self.state = 0
         self.facing_right = True
         self.frame_override = True
-        self.rect = pg.Rect((200, 20), (128, 128)) # Spawn point and collision size.
-        self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 36), (18, 64))
-        self.refresh_rect = pg.Rect((self.rect.x - 64, self.rect.y - 64), (256, 256))
+        self.frame_speed = 200
+        # Projectile animation frames.
+        fursa_projectile = blast_frames()
+        self.projectile_frames = fursa_projectile.frames
 
-        # States
+        # Sprite rect init.
+        self.rect = pg.Rect((200, 20), (128, 128))
+
+        # States.
         self.key_pressed = False
-        self.gravity_dt = 0
-        self.frame_dt = 0
-        self.jump_dt = 0
-        self.fall_rate = 1
-        self.jump_rate = 20
-        self.jump_index = 0
-        self.move = 1 # @pixel/frame. At approx 80 fps --> 80 pixel/sec
         self.jump = False
         self.attack = False
-        self.frame_speed = 200
         self.hit = False
         self.cutscene_enter = False
         self.map_forward = False
@@ -39,6 +39,16 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.walking = False
         self.running = False
         self.on_ground = False
+        self.fall_rate = 1
+        self.jump_rate = 20
+        self.jump_index = 0
+        # @pixel/frame. At approx 80 fps --> 80 pixel/sec
+        self.move = 1
+
+        # Time recorders.
+        self.gravity_dt = 0
+        self.frame_dt = 0
+        self.jump_dt = 0
 
         # Load sound effects.
         file.cd('Players\Fursa')
@@ -48,20 +58,17 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
         self.walk_dirt.set_volume(0.15)
         self.teleport_noise = pg.mixer.Sound('teleport.wav')
-
-        # Battle transition elements are part of Fursa's class due to the location of the event loop upon transition.
-        # Battle Transition Sounds.
         self.battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
         self.battle_impact_noise = pg.mixer.Sound('battle_start.wav')
         self.battle_impact_noise.set_volume(0.50)
 
         # Battle Transition Screen.
-        resolution = width, height = 1920,1080
-        black = (0,0,0)
+        resolution = width, height = 1920, 1080
+        black = (0, 0, 0)
         self.battle_transition = pg.Surface(resolution)
         self.battle_transition.fill(black)
 
-        # Character attributes.
+        # Character attributes and battle states.
         self.level = 1
         self.exp = 0
         self.current_hp = 10
@@ -72,29 +79,32 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.speed = 3
         self.spell = False
         self.turn = False
-
         self.turn_determiner = [self.party_spawn, self.speed]
 
-        self.slot_labels = { 1: ['ATTACK', 'SPIRIT BLAST'],
-                             2: ['BAG', '---'],
-                             3: ['RUN', '---'],
-                             4: ['SPELL', '---'] }
+        # Combat move and selection descriptions.
+        self.slot_labels = {1: ['ATTACK', 'SPIRIT BLAST'],
+                            2: ['BAG', '---'],
+                            3: ['RUN', '---'],
+                            4: ['SPELL', '---']
+                            }
 
-        self.combat_descriptions = { 1: ['Attack the enemy with a basic attack. Low damage but free of resources.',
-                                         'A concentrated blast of spiritual energy. Low damage and mana cost.'],
+        self.combat_descriptions = {1: ['Attack the enemy with a basic attack. Low damage but free of resources.',
+                                        'A concentrated blast of spiritual energy. Low damage and mana cost.'],
 
-                                     2: ['Use an item in your bag to heal or temporarily boost your attributes.',
-                                         ''],
+                                    2: ['Use an item in your bag to heal or temporarily boost your attributes.',
+                                        ''],
 
-                                     3: ['Attempt to run away from combat. Has a chance of failing. No experience awarded if successful.',
-                                         ''],
+                                    3: ['Attempt to run away from combat. Has a chance of failing. No experience awarded if successful.',
+                                        ''],
 
-                                     4: ['Attack the enemy with a spell of your choice. Spells require mana to cast.',
-                                         '']}
+                                    4: ['Attack the enemy with a spell of your choice. Spells require mana to cast.',
+                                        '']
+                                    }
 
-    # Function that uploads and stores all possible frames Fursa may use. Is called in __init__.
-    # Created separately for organizational purposes.
     def upload_frames(self, file):
+
+        """ Function that uploads and stores all frames for Fursa during init.
+            Created separately for organizational purposes. """
 
         idle_images = []
         walk_images = []
@@ -104,9 +114,9 @@ class Fursa_sprite(pg.sprite.Sprite):
         hit_images = []
         death_images = []
 
-        # State IDs
-        #-----------------------0------------1------------2------------3--------------4--------------5-----------6-------#
-        self.all_images = [idle_images, walk_images, run_images, attack_images, shield_images, death_images, hit_images]
+        # State IDs. Used as an identifier when changing self.state.
+        # -----------------------0------------1------------2------------3--------------4--------------5-----------6-------#
+        self.all_frames = [idle_images, walk_images, run_images, attack_images, shield_images, death_images, hit_images]
 
         directories =      ["Players\Fursa\Idle"          # Idle animation.
                            ,"Players\Fursa\Walk"          # Walking animation.
@@ -119,75 +129,81 @@ class Fursa_sprite(pg.sprite.Sprite):
         for i, directory in enumerate(directories):
             file.cd(directory)
             for img_file in file.file_list():
-                self.all_images[i].append(pg.transform.scale(pg.image.load(img_file).convert_alpha(), (128, 128)))
+                self.all_frames[i].append(pg.transform.scale(pg.image.load(img_file).convert_alpha(), (128, 128)))
+        # Hit animation is simply the first couple of frames from the death animation.
+        self.all_frames[6] = (self.all_frames[5][0:7])
 
-        self.all_images[6] = (self.all_images[5][0:7])
+        # Create a list of number of frames for each animation. Used to know when frame_index should be reset.
+        self.frame_maxes = [len(images) for images in self.all_frames]
 
-        # Create a list of number of frames for each animation.
-        self.frame_maxes = [len(images) for images in self.all_images]
-
-    # Function that changes Fursa's animation depending on the action performed.
-    # Continuously called in self.update().
     def change_state_keys(self):
 
-        # Each frame list has a state ID that can be found outlined in self.upload_frames().
-        # Each animation type has its own fps.
+        """ Function that changes Fursa's animation depending on keyboard input.
+            Is continuously called during non-cutscenes and non-battles.
+            Animations are ordered in priority.
+            Each animation type has its own fps. """
+
         self.prev_state = self.state
 
+        # HIT animation.
         if self.hit:
             self.state = 6
             self.frame_speed = 25
-            self.walking = False
-            self.running = False
+            self.walking = self.running = False
+
+        # ATTACK animation.
         elif self.attack:
             self.state = 3
             self.frame_speed = 75
-            self.walking = False
-            self.running = False
+            self.walking = self.running = False
+
+        # RUN animation.
         elif self.key_pressed and self.shift:
             self.state = 2
             self.frame_speed = 100
             self.walking = False
             self.running = True
+
+        # WALK animation.
         elif self.key_pressed:
             self.state = 1
             self.frame_speed = 125
             self.walking = True
             self.running = False
+
+        # IDLE animation.
         else:
             self.state = 0
             self.frame_speed = 200
-            self.walking = False
-            self.running = False
+            self.walking = self.running = False
 
-        self.current_images = self.all_images[self.state]
+        self.current_frames = self.all_frames[self.state]
 
+        # Reset frame_index if state change is detected.
         if self.prev_state != self.state:
             self.frame_index = 0
 
-    """
-        Function that handles Fursa's key inputs. Called in update().
-        Split into two sections:
-        1. Monitoring held down keys and combinations.
-        2. Monitoring single key press events.
-        Due to the nature of pygame, both have to be used in tandem to
-        create fluid game controls.
-    """
-
     def handle_keys(self, time, dt, map):
 
+        """ Function that handles Fursa's key inputs and translates them into actions.
+            Is called continuously during non-cutscenes and non-battles.
+            Split into two sections:
+                1. Monitoring held down keys and combinations.
+                2. Monitoring single key press events in pygame event loop.
+            Due to the nature of pygame, both have to be used in tandem to create fluid game controls.
+            WARNING -> Pygame event loops transfer over to Map.py files during cutscenes and battles. """
+
         # Monitor held down keys. (movement)
-        # If attack animation is not in progress, move in the direction of the pressed key.
-        if self.attack == False:
+        # If an attack animation is not in progress, move in the direction of the pressed key.
+        if self.attack is False:
             keys = pg.key.get_pressed()
             if keys[pg.K_d]:
                 self.rect.x += self.move
-                self.key_pressed = True  # Self.key_pressed() is fed back to change_state(). Found several times throughout handle_keys().
+                self.key_pressed = True
             elif keys[pg.K_a]:
                 self.rect.x -= self.move
                 self.key_pressed = True
-            # Running changes speed by holding down shift.
-            # Self.shift is fed back to change_state().
+            # Speed is doubled when shift is held down. (RUN animation)
             if keys[pg.K_LSHIFT]:
                 self.shift = True
                 self.move = 2 * dt
@@ -198,97 +214,107 @@ class Fursa_sprite(pg.sprite.Sprite):
         # Pygame event loop.
         for event in pg.event.get():
 
-            # Monitor single key presses. (actions)
+            # Monitor single key presses.
             # If a key is pressed and an attack animation is not in progress, register the key press.
-            if event.type == pg.KEYDOWN and self.attack == False:
+            if event.type == pg.KEYDOWN and self.attack is False:
 
+                # Reset frame_index whenever a key is pressed.
                 self.key_pressed = True
-                self.frame_index = 0 # Frame reset when key is pressed.
+                self.frame_index = 0
 
-                # Registers which way Fursa should be facing. Fed to self.update().
+                # Registers which way Fursa should be facing.
                 if event.key == pg.K_d:
                     self.facing_right = True
-                    self.walking = True
                 elif event.key == pg.K_a:
                     self.facing_right = False
-                    self.walking = True
 
                 # Enables attack animation.
-                # Self.attack set to True prevents other key inputs to be registered until the animation is completed.
                 elif event.key == pg.K_r:
                     self.attack = True
 
-                # Jump input.
+                # Jump input. self.jump is fed into jump code located below.
                 elif event.key == pg.K_SPACE:
                     self.jump_noise.play()
-                    self.jump = True    # ----------------> Jump starts.
+                    self.jump = True
 
+                # If Fursa is in contact with a portal, allow transition to next map.
                 elif event.key == pg.K_w:
                     if self.rect.collidepoint(map.portal_rect.centerx, map.portal_rect.centery):
+                        # Cancel any and all sounds in previous map upon exit.
                         for sound in map.end_sounds:
                             sound.stop()
                         self.teleport_noise.play()
                         self.map_forward = True
 
+                # Allow closing the game.
                 elif event.key == pg.K_ESCAPE:
-                     pg.quit()
-                     sys.exit()
+                    pg.quit()
 
-            # Frame reset when key is no longer held down. Self.key_pressed set to False to change state to idle.
-            elif event.type == pg.KEYUP and self.attack == False:
+            # Frame reset when key is no longer held down. self.key_pressed set to false changes state back to idle.
+            elif event.type == pg.KEYUP and self.attack is False:
                 self.frame_index = 0
                 self.key_pressed = False
 
-            else:
-                self.key_pressed = False
-
-        # Jumping animation triggered by space key press.
-        # Jump code is placed outside event loop so that the animation can carry out.
-        # Decelerates every 60 ms.
+        # Jump code is placed outside event loop so that the animation can carry out properly.
+        # Jump up decelerates every 60ms by 20% until jump_index reaches 5.
         if self.jump is True:
             if (time - self.jump_dt) >= 60:
                 self.jump_dt = time
-                self.jump_rate *= 0.8 # Jump deceleration.
+                self.jump_rate *= 0.8
                 self.jump_index += 1
                 for i in range(int(self.jump_rate)):
                     self.rect.y -= 1
                     if self.jump_index == 5:
-                        self.jump = False   # ----------------> Jump finishes.
+                        self.jump = False
                         self.jump_rate = 20
                         self.jump_index = 0
                         break
 
     def change_state_battle(self, state_id):
+
+        """ Function that changes Fursa's animation depending on battle state.
+            Is continuously called during battles.
+            Matches change_state_keys. """
+
+        # WALK animation.
         if state_id == 1:
             self.state = 1
             self.frame_speed = 125
             self.walking = True
             self.running = False
+        # RUN animation.
         elif state_id == 2:
             self.state = 2
             self.frame_speed = 100
             self.walking = False
             self.running = True
+        # ATTACK animation.
         elif state_id == 3:
             self.state = 3
             self.frame_speed = 75
-            self.walking = False
-            self.running = False
+            self.walking = self.running = False
+        # IDLE animation.
         elif state_id == 0:
             self.state = 0
             self.frame_speed = 200
-            self.walking = False
-            self.running = False
+            self.walking = self.running = False
 
-        self.current_images = self.all_images[self.state]
+        self.current_frames = self.all_frames[self.state]
 
     def battle_controls(self, map):
+
+        """ Function that handles Fursa's battle inputs and translates them into actions.
+            Battle commands are selected in the pygame eventloop located in Map.py files.
+            Is called continuously during battles. """
+
         self.prev_state = self.state
 
+        # If it is Fursa's turn, allow action.
         if map.current_turn == self.party_spawn:
-            # Melee attack animation.
+            # Melee attack.
             if map.battle_command == 1:
                 map.animation_complete = False
+                # Run up to enemy position and perform attack animation.
                 if self.rect.right <= map.battle_spawn_pos[4].left:
                     self.change_state_battle(2)
                     self.rect.x += 2
@@ -299,6 +325,7 @@ class Fursa_sprite(pg.sprite.Sprite):
             # Spell animation.
             elif map.battle_command == 2:
                 map.animation_complete = False
+                # Run to the middle platform and perform spell animation.
                 if self.rect.centerx <= map.battle_spawn_pos[6].centerx:
                     self.change_state_battle(2)
                     self.rect.x += 2
@@ -306,13 +333,15 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.spell = True
                     self.change_state_battle(3)
 
-            # Return to position animation.
+            # Return to position.
+            # map.battle_command is set to 0 when self.attack or self.attack becomes false.
             elif map.battle_command == 0:
                 if self.rect.centerx >= map.battle_spawn_pos[self.party_spawn].centerx:
                     self.facing_right = False
                     self.change_state_battle(2)
                     self.rect.x -= 2
                 else:
+                    # When action is completed and Fursa is back in position, turn is over.
                     self.facing_right = True
                     self.change_state_battle(0)
                     map.animation_complete = True
@@ -320,151 +349,93 @@ class Fursa_sprite(pg.sprite.Sprite):
         if self.prev_state != self.state:
             self.frame_index = 0
 
-    # Function that updates Fursa's frames and positioning. Called continuously in game loop main().
-    # Must be fed the blockers of the current map.
-    def update(self, blockers, time, dt, cutscene, screen, map, map_travel, battle_travel,
-                character_sprites, enemy_sprites, particle_sprites, particle_frames, file):
+    def update(self, time, dt, map, screen, character_sprites, enemy_sprites, particle_sprites, file):
 
-        normalized_dt = round(dt / 11)
+        """ Main update function. Continuously called at all times in game loop main()
+            Updates Fursa's frame and hitbox. Monitors platform interaction.
+            Must be fed the blockers of the current map. """
 
+        # Hitbox and refresh rect updates.
         if self.facing_right:
-            self.hitbox_rect = pg.Rect((self.rect.x + 52 , self.rect.y + 36), (18, 64))
+            self.hitbox_rect = pg.Rect((self.rect.x + 52, self.rect.y + 36), (18, 64))
         else:
-            self.hitbox_rect = pg.Rect((self.rect.x + 58 , self.rect.y + 36), (18, 64))
+            self.hitbox_rect = pg.Rect((self.rect.x + 58, self.rect.y + 36), (18, 64))
 
         self.refresh_rect = pg.Rect((self.rect.x - 64, self.rect.y - 64), (256, 256))
 
-        # Disallow any key input if cutscene is in progress. Revert Fursa into a idle state.
-        if map.battle is True:
-            self.battle_controls(map)
-            if battle_travel:
-                self.battle_forward = False
-        elif cutscene is False:
-            self.handle_keys(time, normalized_dt, map)
+        # Enable different code segments depending on game state.
+        if map.cutscene is False and map.battle is False:
+            self.handle_keys(time, dt, map)
             self.change_state_keys()
             self.cutscene_enter = False
-            if map_travel:
-                self.map_forward = False
-        elif cutscene:
+        elif map.battle is True:
+            self.battle_controls(map)
+        # Disallow any key input if cutscene is in progress. Revert Fursa to an idle state.
+        elif map.cutscene is True:
             self.state = 0
             self.frame_speed = 200
-            self.walking = False
-            self.running = False
-            self.current_images = self.all_images[self.state]
+            self.walking = self.running = False
+            self.current_frames = self.all_frames[self.state]
             if self.cutscene_enter is False:
                 self.frame_index = 0
                 self.cutscene_enter = True
 
         """
-            Cycle through frames depending on self.frame_speed that is set in self.change_state().
+            Cycle through frames depending on the self.frame_speed for the specific state Fursa is in.
             Flip the frame image vertically depending on which direction Fursa is facing.
-            Self.frame_override is a boolean representing the previous state of self.facing_right.
+            self.frame_override is a boolean representing the previous state of self.facing_right where true is right.
             If the direction that Fursa is facing has changed before a frame can be refreshed,
-            bypasses frame timer and resets the to avoid Fursa momentarily moving facing the wrong direction.
+            bypasses frame timer in order to avoid Fursa momentarily moving facing the wrong direction.
         """
 
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
 
             # Resets frame index if the max for a certain animation is reached.
-            # Also, sets attack animation back to False in case the action was an attack.
+            # Sets attack, spell, and hit to false to indicate completion.
             if self.frame_index == self.frame_maxes[self.state]:
                 if self.attack or self.spell:
+                    # Initiates walkback during battles.
                     map.battle_command = 0
                 self.attack = False
                 self.spell = False
                 self.hit = False
                 self.frame_index = 0
 
-            if self.facing_right:
-                self.image = self.current_images[self.frame_index]
+            if self.facing_right is True:
+                self.image = self.current_frames[self.frame_index]
                 self.frame_index += 1
                 self.frame_override = True
             else:
-                self.image = pg.transform.flip(self.current_images[self.frame_index], True, False)
+                self.image = pg.transform.flip(self.current_frames[self.frame_index], True, False)
                 self.frame_index += 1
                 self.frame_override = False
 
-            # Play attack noise at the correct frame.
+            # Play dirt crunch noise at the correct frame.
             if self.walking and self.on_ground:
                 if self.frame_index == 2 or self.frame_index == 8:
                     self.walk_dirt.play()
-
             elif self.running and self.on_ground:
                 if self.frame_index == 4 or self.frame_index == 11:
                     self.walk_dirt.play()
 
+            # Play attack noise at correct frames.
             elif self.attack is True:
                 if self.frame_index == 1:
                     self.attack_charge.play()
                 elif self.frame_index == 8:
                     self.attack_noise.play()
-
-            elif self.spell == True:
+            # Create a blast particle for spells.
+            elif self.spell is True:
                 if self.frame_index == 1:
                     self.attack_charge.play()
                 elif self.frame_index == 8:
                     self.attack_noise.play()
-                    blast = Fursa_blast(particle_frames, self.facing_right, self.rect.x, self.rect.y)
+                    blast = SPIRIT_BLAST(self)
                     particle_sprites.add(blast)
 
-
-        """ ----------------------SKIP POS 1 ----------------------------------------
-         |  Enemy collision detection. Transition to turn-based combat.
-         |  All code pertaining to transitioning into combat mode is located here.
-         |  Each individual sprite's combat behavior is located in its own respective class.
-        """
-        if map.battle is False:
-            for enemy in enemy_sprites:
-                if enemy.attack:
-                    if self.hitbox_rect.colliderect(enemy.rect) and enemy.frame_index == 8:
-
-                        self.image = self.all_images[6][2]
-
-                        # Transition screen.
-                        self.battle_impact_noise.play()
-                        pg.mixer.music.stop()
-                        enemy_sprites.draw(screen)
-                        character_sprites.draw(screen)
-                        screen.blit(map.map.front_surface, (0,0))
-                        pg.display.flip()
-                        pg.time.wait(1000)
-                        screen.blit(self.battle_transition, (0,0))
-                        enemy_sprites.draw(screen)
-                        character_sprites.draw(screen)
-                        pg.display.flip()
-                        self.battle_sword_aftersound.play()
-                        pg.time.wait(1000)
-
-                        # Spawn and music start.
-                        self.facing_right = True
-                        enemy.facing_right = False
-                        file.cd('Maps\Map_02')
-                        battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
-                        pg.mixer.music.play(loops = -1, start = 0.0)
-                        self.frame_index = 0
-                        self.hit = True
-                        self.jump = False
-                        self.battle = True
-                        self.battle_forward = True
-                        self.state = 0
-                        self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx
-                        self.rect.centery = map.battle_spawn_pos[self.party_spawn].centery
-                        enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
-                        enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
-
-
-            """ Battle Platform Layout.
-                                                      Midpoint for Ranged Attacks
-                                          Ally                       |                  Enemies
-
-    Spawn Location Indexes    ------0---------1-----------2----------6-----------4---------5--------6------"""
-
-
-        """ ---------------------------- END OF BATTLE CODE -------------------------------"""
-
-        # Gravity emulation with current map blockers.
-        for block in blockers:
+        # Gravity emulation using map platforms.
+        for block in map.blockers:
             # Checks to see if Fursa is in contact with the ground.
             if self.hitbox_rect.colliderect(block):
                 self.on_ground = True
@@ -486,7 +457,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     if (end_fall - start_fall) > 256:
                         pg.display.update(self.refresh_rect)
                     # Halts falling when Fursa lands on a block.
-                    for block in blockers:
+                    for block in map.blockers:
                         if self.hitbox_rect.colliderect(block):
                             self.fall_rate = 1
                             self.on_ground = True
@@ -494,88 +465,59 @@ class Fursa_sprite(pg.sprite.Sprite):
                     if self.on_ground is True:
                         break
 
-# Class simply containing projectile frames of various attacks.
-# Created to avoid having to load from the hard drive every time a projectile is created.
-class blast_frames():
-    def __init__(self):
-        file = files()
-        # Fursa's attack blast properly separated into frames into a list from a spritesheet.
-        file.cd("Players\Fursa")
-        coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
-        blast_image_ss = spritesheet('EnergyBall.png')
-        blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
-        self.blast_images_r = [pg.transform.scale(blast_images_separate[i], (64, 64)) for i in range(0, len(blast_images_separate))]
-        self.blast_images_l = [pg.transform.flip(self.blast_images_r[i], True, False) for i in range(0, len(self.blast_images_r))]
+        """ Enemy collision detection. Transition to battle mode. (turn-based combat)
+            All code pertaining to transitioning into combat mode is located here.
+            Once transition is completed, pygame event loop moves to Map.py file.
+            Transition includes setting spawn locations and changing map surfaces. """
 
-        # Impact frames.
-        coordinates = [(0, 128 * i, 128, 128) for i in range(0,8)]
-        impact_images_ss = spritesheet('energyBallImpact.png')
-        impact_images_separate = impact_images_ss.images_at(coordinates, colorkey = (0, 0, 0))
-        self.impact_images_r = [pg.transform.scale(impact_images_separate[i], (64, 64)) for i in range(0, len(impact_images_separate))]
-        self.impact_images_l = [pg.transform.flip(self.impact_images_r[i], True, False) for i in range(0, len(self.impact_images_r))]
+        # If not already in a battle, and hit by an enemy's attack, transition to battle mode.
+        if map.battle is False:
+            for enemy in enemy_sprites:
+                if enemy.attack:
+                    if self.hitbox_rect.colliderect(enemy.rect) and enemy.frame_index == 8:
 
-        self.frames = [self.blast_images_r, self.blast_images_l, self.impact_images_r, self.impact_images_l]
+                        # Set frame to a hit frame.
+                        self.image = self.all_frames[6][2]
 
-# Fursa's blast projectile sprite.
-class Fursa_blast(pg.sprite.Sprite):
-    def __init__(self, frames, Fursa_facing_right, Fursa_x, Fursa_y):
-        super().__init__()
-        self.blast_images_r = frames[0]
-        self.blast_images_l = frames[1]
-        self.impact_images_r = frames[2]
-        self.impact_images_l = frames[3]
+                        # Pause impact frame for 1s.
+                        self.battle_impact_noise.play()
+                        pg.mixer.music.stop()
+                        enemy_sprites.draw(screen)
+                        character_sprites.draw(screen)
+                        screen.blit(map.map.front_surface, (0, 0))
+                        pg.display.flip()
+                        pg.time.wait(1000)
+                        # Clear background to black for 1s.
+                        screen.blit(self.battle_transition, (0, 0))
+                        enemy_sprites.draw(screen)
+                        character_sprites.draw(screen)
+                        pg.display.flip()
+                        self.battle_sword_aftersound.play()
+                        pg.time.wait(1000)
 
-        self.flowing_right = True if Fursa_facing_right else False
+                        # Initiate music.
+                        file.cd('Maps\Map_02')
+                        battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
+                        pg.mixer.music.play(loops=-1, start=0.0)
 
-        if self.flowing_right:
-            self.rect = pg.Rect(Fursa_x + 70, Fursa_y + 44, 64, 64)
-            self.images = self.blast_images_r
-            self.impact = self.impact_images_r
-        else:
-            self.rect = pg.Rect(Fursa_x + 20, Fursa_y + 44, 64, 64)
-            self.images = self.blast_images_l
-            self.impact = self.impact_images_l
+                        # Initialize states.
+                        self.state = 0
+                        self.frame_index = 0
+                        self.facing_right = True
+                        enemy.facing_right = False
+                        self.jump = False
+                        self.battle = True
+                        self.battle_forward = True
 
-        self.image = self.images[0]
-        self.refresh_rect = pg.Rect((self.rect.x - 16, self.rect.y - 16), (96, 96))
-        self.spawn = True
-        self.i = 0
-        self.e = 0
-        #self.already_spawned = False
-        self.flow_right = True
-        self.particle_hit = False
+                        # Spawn locations.
+                        self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx
+                        self.rect.centery = map.battle_spawn_pos[self.party_spawn].centery
+                        enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
+                        enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
 
-    def update(self, Fursa, dt, particle_sprites, enemy_sprites):
 
-        normalized_dt = round(dt / 11)
-        dt = normalized_dt
+            """ Battle Platform Layout.
+                                                      Midpoint for Ranged Attacks
+                                          Ally                       |                  Enemies
 
-        self.refresh_rect = pg.Rect((self.rect.x - 16, self.rect.y - 16), (96, 96))
-        self.hitbox_rect = pg.Rect((self.rect.x + 10, self.rect.y + 20), (48, 20))
-
-        # Once blast is spawned by Fursa, will keep traveling across map until it hits the
-        # right of left edge of the map in which case the sprite will be killed.
-        if self.particle_hit is False and self.flowing_right:
-            self.rect.x += 3 * dt
-        else:
-            self.rect.x -= 3 * dt
-
-        self.image = self.images[self.i] # Frame changing.
-        self.i += 1
-        if self.i == 8: self.i = 0
-
-        if self.rect.right > 1920 or self.rect.left < 0:
-            self.spawn = False
-            self.kill()
-
-        elif self.spawn and self.particle_hit:
-            self.images = self.impact
-            self.image = self.images[self.e] # Frame changing.
-            self.e += 1
-            if self.e == 8:
-                self.kill()
-                self.particle_hit = False
-
-        for enemy in enemy_sprites:
-            if self.hitbox_rect.collidepoint((enemy.hitbox_rect.x + enemy.hitbox_rect.width/2),(enemy.hitbox_rect.y + enemy.hitbox_rect.height/2)):
-                self.particle_hit = True
+    Spawn Location Indexes    ------0---------1-----------2----------6-----------4---------5--------6------"""

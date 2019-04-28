@@ -4,40 +4,44 @@ import sys
 from time import sleep
 import random
 
-# Import Modules
+# Import Game Modules
 from directory_change import files
-from Fursa import Fursa_sprite, blast_frames, Fursa_blast
+from Fursa import Fursa_sprite
 from enemies import enemy_frames
 from Map_01 import Map_01
 from Map_02 import Map_02
 
+
 # Game Start.
 def main():
     fi = files()
-    # Game parameters.
+    # Initiate pygame parameters.
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
     pg.event.set_allowed([pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
-    resolution = width, height = 1920,1080
+    resolution = width, height = 1920, 1080
     flags = pg.FULLSCREEN | pg.HWSURFACE | pg.DOUBLEBUF
     screen = pg.display.set_mode(resolution, flags)
     screen.set_alpha(None)
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
+
+    # Dialog Initialization.
     fi.cd('UI\Dialog')
     dialog_box = pg.image.load('dialogue_box.png').convert_alpha()
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
-    dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size = 24)
+    dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size=24)
     dialog_noise = pg.mixer.Sound('chat_noise.wav')
     dialog_package = [dialog_box, dialog_font, dialog_noise]
-    fi.cd('UI\Fonts')
-    fps_font = pg.freetype.Font('digital-7.ttf', size = 48)
 
+    # FPS Initialization.
+    fi.cd('UI\Fonts')
+    fps_font = pg.freetype.Font('digital-7.ttf', size=48)
 
     # Declare character sprites.
-    Fursa = Fursa_sprite()
+    fursa = Fursa_sprite()
     character_sprites = pg.sprite.GroupSingle()
-    character_sprites.add(Fursa)
+    character_sprites.add(fursa)
 
     # Declare npc sprites.
     npc_sprites = pg.sprite.Group()
@@ -47,77 +51,75 @@ def main():
     enemy_sprites = pg.sprite.Group()
 
     # Declare particle sprites.
-    blast_particle_frames = blast_frames()
     particle_sprites = pg.sprite.Group()
 
     # Declare Initial Map.
-
     #Test
     current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
 
-    # #Normal
+    #Normal
     # Starting_Area = Map_01(npc_sprites, dialog_package)
     # current_map = Starting_Area
 
+    # Declare internal variables.
     map_index = 0
-    map_travel = False
-    battle_travel =  False
     black = (0, 0, 0)
-    old_rects = [pg.Rect((0,0),(0,0))]
-    fps_rect = [pg.Rect((1860,10),(50,50))]
-    ui_refresh = 0
-    ui_frames = []
+    old_rects = [pg.Rect((0, 0), (0, 0))]
+    fps_rect = [pg.Rect((1860, 10), (50, 50))]
+    running = True
 
     # Game Loop
-    while True:
+    while running:
 
         pg.event.pump()
 
+        # Get time between frames. Set fpx max to 97.
         time = pg.time.get_ticks()
-        dt = clock.tick(97) # Framerate.
+        dt = clock.tick(97)
+        dt = round(dt / 11)
 
         # Surfaces are blit and updated in order of back to front on screen.
 
-        # Layer 1---------------------------------------------------------------------------------------- Screen background back surface refresh.
+        # Layer 1: Screen background back surface refresh.
 
         if current_map.map_first_time:
-            screen.blit(current_map.map.back_surface, (0,0))
+            screen.blit(current_map.map.back_surface, (0, 0))
         else:
             for rect in active_rects:
                 screen.blit(current_map.map.back_surface, rect, rect)
 
-        # Layer 2----------------------------------------------------------------------------------------------------- Enemy sprites update
+        # Layer 2: Enemy sprites update.
 
-        enemy_sprites.update(current_map.map.blockers, time, current_map, Fursa, particle_sprites)
+        enemy_sprites.update(current_map.blockers, time, current_map, fursa, particle_sprites)
         # for enemy in enemy_sprites:
         #     pg.draw.rect(screen, black, enemy.hitbox_rect)
         enemy_sprites.draw(screen)
         enemy_rects = [enemy.refresh_rect for enemy in enemy_sprites.sprites()]
 
-        # Layer 3--------------------------------------------------------------------------------------------------- Character sprites update.
+        # Layer 3: Character sprites update.
 
-        character_sprites.update(current_map.map.blockers, time, dt, current_map.cutscene, screen,
-                                 current_map, map_travel, battle_travel, character_sprites, enemy_sprites, particle_sprites, blast_particle_frames.frames, fi)
-        #pg.draw.rect(screen, black, Fursa.refresh_rect)
+        character_sprites.update(time, dt, current_map, screen,
+                                 character_sprites, enemy_sprites, particle_sprites, fi)
+        # pg.draw.rect(screen, black, fursa.refresh_rect)
         character_sprites.draw(screen)
-        character_rects = [Fursa.refresh_rect]
+        character_rects = [fursa.refresh_rect]
 
-        # Layer 4--------------------------------------------------------------------------------------------------------- NPC sprites update.
+        # Layer 4: NPC sprites update.
 
-        npc_sprites.update(current_map.map.blockers, time)
+        npc_sprites.update(current_map.blockers, time)
         npc_sprites.draw(screen)
         npc_rects = [npc.rect for npc in npc_sprites.sprites()]
 
-        # Layer 5------------------------------------------------------------------------------------------- Particle sprites update.
+        # Layer 5: Particle sprites update.
 
-        particle_sprites.update(Fursa, dt, particle_sprites, enemy_sprites)
+        particle_sprites.update(dt, enemy_sprites)
         # for particle in particle_sprites:
         #     pg.draw.rect(screen, black, particle.hitbox_rect)
         particle_sprites.draw(screen)
         particle_rects = [particle.refresh_rect for particle in particle_sprites.sprites()]
 
 
-        # Layer 6----------------------------------------------------------------------------------------------- Screen background front surface refresh.
+        # Layer 6: Screen background front surface refresh.
 
         if current_map.map_first_time:
             screen.blit(current_map.map.front_surface, (0,0))
@@ -125,9 +127,9 @@ def main():
             for rect in active_rects:
                 screen.blit(current_map.map.front_surface, rect, rect)
 
-        # Layer 7----------------------------------------------------------------------------------------------- Cutscene animations and fps.
+        # Layer 7: Cutscene animations and fps.
 
-        current_map.update(Fursa, enemy_sprites, screen)
+        current_map.update(fursa, enemy_sprites, screen)
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
 
@@ -156,21 +158,17 @@ def main():
            |   01                      Tutorial_Area                   Y              |
          ------------------------------------------------------------------------------ """
 
-        if Fursa.map_forward is True:
+        if fursa.map_forward is True:
             map_index += 1
             if map_index == 1:
                 current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
-            Fursa.rect.x = current_map.spawnx
-            Fursa.rect.y = current_map.spawny
-            map_travel = True
-        else:
-            map_travel = False
+                fursa.rect.x = current_map.spawnx
+                fursa.rect.y = current_map.spawny
+            fursa.map_foward = False
 
-        if Fursa.battle_forward is True:
+        if fursa.battle_forward is True:
             current_map.map_first_time = True
-            battle_travel = True
-        else:
-            battle_travel =  False
+            fursa.battle_forward = False
 
 
 if __name__ == '__main__':

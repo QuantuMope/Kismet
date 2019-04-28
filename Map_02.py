@@ -14,6 +14,7 @@ class Map_02():
         file.cd('Maps\Map_02')
         self.map = TiledMap('Map_02.tmx')
         self.map.make_map()
+        self.blockers = self.map.blockers
         self.cutscene = False
         self.first_stage = True
         self.battle = False
@@ -212,6 +213,7 @@ class Map_02():
         white = (255,255,255)
         black = (0,0,0)
         self.map = self.battle_map
+        self.blockers = self.map.blockers
 
         # Fursa UI.
         Fursa_name, rect = self.dialog_font.render('FURSA', fgcolor = black, size = 36)
@@ -243,7 +245,7 @@ class Map_02():
             for enemy in enemy_sprites:
                 self.turn_order.append(enemy.turn_determiner)
             self.turn_order.append(character.turn_determiner)
-            self.turn_order = sorted(self.turn_order, key = itemgetter(1), reverse = True)
+            self.turn_order = sorted(self.turn_order, key=itemgetter(1), reverse=True)
             # turn_determiner = [ spawn location, speed ]
 
             self.current_turn = self.turn_order[self.turn_i][0]
