@@ -55,11 +55,11 @@ def main():
 
     # Declare Initial Map.
     #Test
-    current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
+    #current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
 
     #Normal
-    # Starting_Area = Map_01(npc_sprites, dialog_package)
-    # current_map = Starting_Area
+    Starting_Area = Map_01(npc_sprites, dialog_package)
+    current_map = Starting_Area
 
     # Declare internal variables.
     map_index = 0

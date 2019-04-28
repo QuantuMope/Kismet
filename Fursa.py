@@ -7,9 +7,8 @@ from Fursa_projectiles import SPIRIT_BLAST, blast_frames
 # Contains the pygame eventloop for non-cutscenes and non-battles.
 class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
-
-        # Initialize frame parameters. Frames are uploaded once using upload_frames.
         super().__init__()
+        # Initialize frame parameters. Frames are uploaded once using upload_frames.
         file = files()
         self.frame_index = 0
         self.upload_frames(file)

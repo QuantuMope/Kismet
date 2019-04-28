@@ -12,25 +12,26 @@ class Map_01():
         # Map graphics and music.
         file.cd('Maps\Map_01')
         self.map = TiledMap('Map_01_1920x1080.tmx')
-        self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
-        pg.mixer.music.play(loops = -1, start = 0.0)
         self.map.make_map()
         self.blockers = self.map.blockers
+        self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
+        pg.mixer.music.play(loops=-1, start=0.0)
+
+        # States.
         self.cutscene = False
-        self.first_stage = True
+        self.first_cutscene = True
         self.battle = False
         self.event = 0
         self.Masir_dead = False
         self.map_first_time = True
-        coordinates = []
 
         # Portal animation.
+        coordinates = []
         for i in range(0,7):
             coordinates.extend([(100 * e, 100 * i, 100, 100) for e in range(0, 8)])
         coordinates.extend([(100 * e, 700, 100, 100) for e in range(0, 5)])
-
         portal_images_ss = spritesheet('12_nebula_spritesheet.png')
-        portal_images_separate = portal_images_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        portal_images_separate = portal_images_ss.images_at(coordinates, colorkey=(0, 0, 0))
         self.portal_images = [pg.transform.scale(portal_images_separate[i], (160, 160)) for i in range(0, len(portal_images_separate))]
         self.p_index = 0
         self.portal_start = False
@@ -40,26 +41,28 @@ class Map_01():
         self.portal_aura.set_volume(0.40)
         self.portal_blast_start = True
         self.portal_aura_start = True
-        self.portal_rect = pg.Rect(1115,660,160,160)
+        self.portal_rect = pg.Rect(1115, 660, 160, 160)
 
-        self.refresh_rects = [self.portal_rect]
+        # Refresh rects and sounds to end when map is terminated.
         self.ui = []
-
+        self.refresh_rects = [self.portal_rect]
         self.end_sounds = [self.portal_aura]
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600)
         npc_sprites.add(self.Masir)
 
-        # Dialog dictionary.
-        self.black_edge1 = pg.Rect((0,0), (1920,200))
-        self.black_edge2 = pg.Rect((0,880), (1920,200))
+        # Dialog system.
+        self.black_edge1 = pg.Rect((0, 0), (1920, 200))
+        self.black_edge2 = pg.Rect((0, 880), (1920, 200))
         self.dialog_start = True
         self.dialog_box = dialog_package[0]
         self.dialog_font = dialog_package[1]
         self.dialog_noise = dialog_package[2]
         self.e = 0
         self.a = 0
+        # The script is labeled using self.event. Each dialogue references a list containing two strings.
+        # The first is the actual dialgoue while the second is the speaker.
         self.script = {                0: ["Where am I?",   'Boy'],
                                        1: ["... Who am I?", 'Boy'],
                                        2: ["So you\'ve awakened, my child.", '???'],
@@ -73,31 +76,32 @@ class Map_01():
                                        10:["Wait. What is your name?", 'Fursa'],
                                        11:["You may call me Masir, little one.", 'Masir']}
 
-
     def black_edges(self, screen):
-        black = (0,0,0)
-        pg.draw.rect(screen, black, (0,0,1920,200))
-        pg.draw.rect(screen, black, (0,880,1920,200))
+        # Blackout the bottom and top of the screen during dialogue.
+        black = (0, 0, 0)
+        pg.draw.rect(screen, black, (0, 0, 1920, 200))
+        pg.draw.rect(screen, black, (0, 880, 1920, 200))
 
     # Function to render and blit dialog.
     def dialog(self, text, name, screen):
         self.black_edges(screen)
-        screen.blit(self.dialog_box, (550,880))
-        load_text = ''
+        screen.blit(self.dialog_box, (550, 880))
         if self.dialog_start:
             self.dialog_noise.play()
             self.e = 0
             self.a = 0
 
+        # If text is long, wrap the text. Otherwise, simply print.
         if len(text) > 50:
             i = 50
+            # Properly wrap text in the dialogue box by detecting spaces.
+            # Text will only ever be two lines.
             while text[i] != ' ':
                 i += 1
             if i > 52:
                 i = 50
                 while text[i] != ' ':
                     i -= 1
-
             new_text = [text[0:i], text[i+1:]]
             load_text_1 = new_text[0][0:self.e]
             load_text_2 = new_text[1][0:self.a]
@@ -115,65 +119,76 @@ class Map_01():
             screen.blit(dialog_text_1, (600,955))
             self.e += 1
 
+        # Print the speaker's name.
         name_text, rect_3 = self.dialog_font.render(name)
         screen.blit(name_text, (600,905))
 
-    def cutscene_event(self, character, screen):
+    def cutscene_event(self, fursa, screen):
+
+        """ Start cutscene events when certain criteria are met.
+            During a cutscene, the pygame event loop is used in this function.
+            The main one located in Fursa.py is disabled. """
 
         if self.cutscene is False:
-            if self.first_stage and character.state != 0:
+            # Activate dialogue upon first movement.
+            if self.first_cutscene and fursa.state != 0:
                 self.cutscene = True
-                self.first_stage = False
+                self.first_cutscene = False
 
-            if abs(character.rect.centerx - self.Masir.rect.centerx) < 150:
-                if self.Masir_dead is False:
-                    self.cutscene = True
+            # Activate secondary dialogue when approaching Masir.
+            if abs(fursa.rect.centerx - self.Masir.rect.centerx) < 150 and self.Masir_dead is False:
+                self.cutscene = True
 
+        # CUTSCENE MODE.
         if self.cutscene:
             self.refresh_rects = [self.portal_rect, self.black_edge1, self.black_edge2]
 
             if self.event < 7:
+                # Print dialogue based on self.event.
                 self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
                 self.dialog_start = False
             elif self.event == 7:
+                # Masir portal creation scene.
                 self.Masir.attack = True
                 self.event += 1
                 self.black_edges(screen)
             elif self.Masir.attack is False and self.event < 12:
+                # After portal is created, further dialogue.
                 self.dialog(self.script[self.event][0], self.script[self.event][1], screen)
                 self.dialog_start = False
             elif self.event >= 12:
+                # Once dialogue is completed, Masir approaches the portal.
                 self.Masir.walk = True
                 self.Masir.rect.x += 1
                 self.black_edges(screen)
             else:
                 self.black_edges(screen)
 
+            # Create the portal during Masir's cutscene.
             if self.Masir.attack is True:
                 if self.Masir.frame_index == 16:
                     self.portal_start = True
                     if self.portal_aura_start:
-                        self.portal_aura.play(loops = -1)
+                        self.portal_aura.play(loops=-1)
                         self.portal_aura_start = False
                 elif self.Masir.frame_index == 3 and self.portal_blast_start:
                     self.portal_blast.play()
                     self.portal_blast_start = False
 
+            # Once Masir is in contact with the portal, kill the sprite and end the cutscene.
             if self.Masir.rect.centerx == self.portal_rect.centerx:
                 self.Masir.kill()
                 self.cutscene = False
                 self.Masir_dead = True
 
-            # Allow exiting the game during a cutscene.
+            # Pygame event loop activates ONLY during cutscenes.
             for event in pg.event.get():
-                # Allow to quit game. Included in this portion to be able to keep only one event loop.
 
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
                          pg.quit()
-                         sys.exit()
 
-                # Navigating cutscenes.
+                # Cutscenes are navigated using mouse clicks.
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     self.dialog_start = True
                     self.event += 1
@@ -183,12 +198,12 @@ class Map_01():
         else:
             self.refresh_rects = [self.portal_rect]
 
+        # Portal frame change and frame index reset.
         if self.portal_start is True:
-            screen.blit(self.portal_images[self.p_index], (1115,660))
+            screen.blit(self.portal_images[self.p_index], (1115, 660))
             self.p_index += 1
             if self.p_index == len(self.portal_images):
                 self.p_index = 0
 
-
-    def update(self, character, enemy_sprites, screen):
-        self.cutscene_event(character, screen)
+    def update(self, fursa, enemy_sprites, screen):
+        self.cutscene_event(fursa, screen)
