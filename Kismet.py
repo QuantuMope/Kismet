@@ -7,7 +7,7 @@ import random
 # Import Game Modules
 from directory_change import files
 from Fursa import Fursa_sprite
-from enemies import enemy_frames
+from enemy_frames import enemy_sprite_frames
 from Map_01 import Map_01
 from Map_02 import Map_02
 
@@ -47,7 +47,7 @@ def main():
     npc_sprites = pg.sprite.Group()
 
     # Declare enemy sprites.
-    enemy_images = enemy_frames()
+    enemy_images = enemy_sprite_frames()
     enemy_sprites = pg.sprite.Group()
 
     # Declare particle sprites.
@@ -55,10 +55,10 @@ def main():
 
     # Declare Initial Map.
     #Test
-    #current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
+    #current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites)
 
     #Normal
-    Starting_Area = Map_01(npc_sprites, dialog_package)
+    Starting_Area = Map_01(dialog_package, npc_sprites)
     current_map = Starting_Area
 
     # Declare internal variables.
@@ -90,7 +90,7 @@ def main():
 
         # Layer 2: Enemy sprites update.
 
-        enemy_sprites.update(current_map.blockers, time, current_map, fursa, particle_sprites)
+        enemy_sprites.update(time, dt, current_map, fursa, particle_sprites)
         # for enemy in enemy_sprites:
         #     pg.draw.rect(screen, black, enemy.hitbox_rect)
         enemy_sprites.draw(screen)
@@ -106,7 +106,7 @@ def main():
 
         # Layer 4: NPC sprites update.
 
-        npc_sprites.update(current_map.blockers, time)
+        npc_sprites.update(time, dt, current_map)
         npc_sprites.draw(screen)
         npc_rects = [npc.rect for npc in npc_sprites.sprites()]
 

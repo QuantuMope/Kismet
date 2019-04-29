@@ -8,17 +8,15 @@ from Fursa_projectiles import SPIRIT_BLAST, blast_frames
 class Fursa_sprite(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        # Initialize frame parameters. Frames are uploaded once using upload_frames.
         file = files()
-        self.frame_index = 0
+        # Initialize frame parameters. Frames are uploaded once using upload_frames.
         self.upload_frames(file)
         self.current_frames = self.all_frames[0]
         self.image = self.current_frames[0]
-        self.prev_state = 0
-        self.state = 0
         self.facing_right = True
         self.frame_override = True
         self.frame_speed = 200
+        self.frame_index = 0
         # Projectile animation frames.
         fursa_projectile = blast_frames()
         self.projectile_frames = fursa_projectile.frames
@@ -27,6 +25,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.rect = pg.Rect((200, 20), (128, 128))
 
         # States.
+        self.prev_state = 0
+        self.state = 0
         self.key_pressed = False
         self.jump = False
         self.attack = False
@@ -34,7 +34,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.cutscene_enter = False
         self.map_forward = False
         self.battle_forward = False
-        self.battle = False
         self.walking = False
         self.running = False
         self.on_ground = False
@@ -175,8 +174,6 @@ class Fursa_sprite(pg.sprite.Sprite):
             self.state = 0
             self.frame_speed = 200
             self.walking = self.running = False
-
-        self.current_frames = self.all_frames[self.state]
 
         # Reset frame_index if state change is detected.
         if self.prev_state != self.state:
@@ -352,7 +349,7 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         """ Main update function. Continuously called at all times in game loop main()
             Updates Fursa's frame and hitbox. Monitors platform interaction.
-            Must be fed the blockers of the current map. """
+            Monitors whether open world, cutscene, or battle controls should be enabled. """
 
         # Hitbox and refresh rect updates.
         if self.facing_right:
@@ -389,6 +386,8 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         if (time - self.frame_dt) >= self.frame_speed or self.facing_right != self.frame_override:
             self.frame_dt = time
+
+            self.current_frames = self.all_frames[self.state]
 
             # Resets frame index if the max for a certain animation is reached.
             # Sets attack, spell, and hit to false to indicate completion.
@@ -443,11 +442,11 @@ class Fursa_sprite(pg.sprite.Sprite):
                 self.on_ground = False
 
         if self.on_ground is False:
-            # If not in contact with the ground, accelerates falling down every 20 ms.
+            # If not in contact with the ground, accelerates falling down every 20 ms by 10%.
             # Gravity is disabled when a jump animation is in progress.
             if (time - self.gravity_dt) >= 20 and self.jump is False:
                 self.gravity_dt = time
-                self.fall_rate *= 1.1 # Acceleration rate.
+                self.fall_rate *= 1.1
                 start_fall = self.rect.y
                 for i in range(int(self.fall_rate)):
                     self.rect.y += 1
@@ -505,8 +504,8 @@ class Fursa_sprite(pg.sprite.Sprite):
                         self.facing_right = True
                         enemy.facing_right = False
                         self.jump = False
-                        self.battle = True
                         self.battle_forward = True
+                        map.battle = True
 
                         # Spawn locations.
                         self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx

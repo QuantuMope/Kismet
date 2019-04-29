@@ -6,7 +6,7 @@ from npc import Masir_sprite
 
 # Starting area.
 class Map_01():
-    def __init__(self, npc_sprites, dialog_package):
+    def __init__(self, dialog_package, npc_sprites):
         file = files()
 
         # Map graphics and music.
@@ -82,8 +82,8 @@ class Map_01():
         pg.draw.rect(screen, black, (0, 0, 1920, 200))
         pg.draw.rect(screen, black, (0, 880, 1920, 200))
 
-    # Function to render and blit dialog.
     def dialog(self, text, name, screen):
+        # Function to render and blit dialogue.
         self.black_edges(screen)
         screen.blit(self.dialog_box, (550, 880))
         if self.dialog_start:
@@ -96,6 +96,7 @@ class Map_01():
             i = 50
             # Properly wrap text in the dialogue box by detecting spaces.
             # Text will only ever be two lines.
+            # Algorithm is coded so that dialogue is "typed".
             while text[i] != ' ':
                 i += 1
             if i > 52:
@@ -116,12 +117,12 @@ class Map_01():
         else:
             load_text_1 = text[0:self.e]
             dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
-            screen.blit(dialog_text_1, (600,955))
+            screen.blit(dialog_text_1, (600, 955))
             self.e += 1
 
         # Print the speaker's name.
         name_text, rect_3 = self.dialog_font.render(name)
-        screen.blit(name_text, (600,905))
+        screen.blit(name_text, (600, 905))
 
     def cutscene_event(self, fursa, screen):
 
@@ -158,7 +159,7 @@ class Map_01():
                 self.dialog_start = False
             elif self.event >= 12:
                 # Once dialogue is completed, Masir approaches the portal.
-                self.Masir.walk = True
+                self.Masir.walking = True
                 self.Masir.rect.x += 1
                 self.black_edges(screen)
             else:
@@ -186,12 +187,13 @@ class Map_01():
 
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
-                         pg.quit()
+                        pg.quit()
 
                 # Cutscenes are navigated using mouse clicks.
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     self.dialog_start = True
                     self.event += 1
+                    # Exit cutscenes at certain self.events.
                     if self.event == 2:
                         self.cutscene = False
 
