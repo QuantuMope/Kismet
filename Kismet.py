@@ -1,8 +1,5 @@
 import pygame as pg
 import pygame.freetype
-import sys
-from time import sleep
-import random
 
 # Import Game Modules
 from directory_change import files

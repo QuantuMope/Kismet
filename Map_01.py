@@ -4,6 +4,7 @@ from spritesheet import spritesheet
 from TiledMap import TiledMap
 from npc import Masir_sprite
 
+
 # Starting area.
 class Map_01():
     def __init__(self, dialog_package, npc_sprites):
