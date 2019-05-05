@@ -60,8 +60,13 @@ class Map_01():
         self.dialog_box = dialog_package[0]
         self.dialog_font = dialog_package[1]
         self.dialog_noise = dialog_package[2]
+        self.dialog_1_final = ''
+        self.dialog_2_final = ''
+        self.dialog_name_final = ''
+        self.dialog_length = ''
         self.e = 0
         self.a = 0
+        self.i = 0
         # The script is labeled using self.event. Each dialogue references a list containing two strings.
         # The first is the actual dialgoue while the second is the speaker.
         self.script = {                0: ["Where am I?",   'Boy'],
@@ -91,39 +96,66 @@ class Map_01():
             self.dialog_noise.play()
             self.e = 0
             self.a = 0
+            self.dialog_length = len(text)
+            # If text is long, wrap the text. Otherwise, simply print.
+            if len(text) > 50:
+                self.i = 50
+                # Properly wrap text in the dialogue box by detecting spaces.
+                # Text will only ever be two lines.
+                # Algorithm is coded so that dialogue is "typed".
+                while text[self.i] != ' ':
+                    self.i += 1
+                if self.i > 52:
+                    self.i = 50
+                    while text[self.i] != ' ':
+                        self.i -= 1
 
-        # If text is long, wrap the text. Otherwise, simply print.
-        if len(text) > 50:
-            i = 50
-            # Properly wrap text in the dialogue box by detecting spaces.
-            # Text will only ever be two lines.
-            # Algorithm is coded so that dialogue is "typed".
-            while text[i] != ' ':
-                i += 1
-            if i > 52:
-                i = 50
-                while text[i] != ' ':
-                    i -= 1
-            new_text = [text[0:i], text[i+1:]]
-            load_text_1 = new_text[0][0:self.e]
-            load_text_2 = new_text[1][0:self.a]
-            dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
-            dialog_text_2, rect_2 = self.dialog_font.render(load_text_2)
-            screen.blit(dialog_text_1, (600, 955))
-            screen.blit(dialog_text_2, (600, 1005))
-            self.e += 1
-            if self.e >= i:
-                self.a += 1
+        # Render text one by one until length is reached for single or double line dialog.
+        if self.e != (len(text) + 1):
+            if self.a == 0 or self.a != self.dialog_length:
+                if len(text) > 50:
+                    new_text = [text[0:self.i], text[self.i+1:]]
+                    load_text_1 = new_text[0][0:self.e]
+                    load_text_2 = new_text[1][0:self.a]
+                    dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
+                    dialog_text_2, rect_2 = self.dialog_font.render(load_text_2)
+                    screen.blit(dialog_text_1, (600, 955))
+                    screen.blit(dialog_text_2, (600, 1005))
+                    self.e += 1
+                    if self.e >= self.i:
+                        self.a += 1
 
+                    # Print the speaker's name.
+                    name_text, rect_3 = self.dialog_font.render(name)
+                    screen.blit(name_text, (600, 905))
+
+                    # Store completed rendered text.
+                    self.dialog_1_final = dialog_text_1
+                    self.dialog_2_final = dialog_text_2
+                    self.dialog_name_final = name_text
+
+                else:
+                    load_text_1 = text[0:self.e]
+                    dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
+                    screen.blit(dialog_text_1, (600, 955))
+                    self.e += 1
+
+                    dialog_text_2, rect_2 = self.dialog_font.render('')
+
+                    # Print the speaker's name.
+                    name_text, rect_3 = self.dialog_font.render(name)
+                    screen.blit(name_text, (600, 905))
+
+                    # Store completed rendered text.
+                    self.dialog_1_final = dialog_text_1
+                    self.dialog_2_final = dialog_text_2
+                    self.dialog_name_final = name_text
+
+        # If line by line render is done, simply blit the final text so avoid needless rendering.
         else:
-            load_text_1 = text[0:self.e]
-            dialog_text_1, rect_1 = self.dialog_font.render(load_text_1)
-            screen.blit(dialog_text_1, (600, 955))
-            self.e += 1
-
-        # Print the speaker's name.
-        name_text, rect_3 = self.dialog_font.render(name)
-        screen.blit(name_text, (600, 905))
+            screen.blit(self.dialog_1_final, (600, 955))
+            screen.blit(self.dialog_2_final, (600, 1005))
+            screen.blit(self.dialog_name_final, (600, 905))
 
     def cutscene_event(self, fursa, screen):
 

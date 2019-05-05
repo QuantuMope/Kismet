@@ -1,9 +1,10 @@
 import os
 
+
 class files(object):
     def __init__(self):
         base_path = os.path.dirname(os.path.realpath(__file__))
-        self.main_directory = base_path[:-11]
+        self.main_directory = base_path
 
     def cd(self, path):
         new_path = '\\' + (path)

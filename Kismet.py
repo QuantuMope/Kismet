@@ -158,7 +158,7 @@ def main():
         if fursa.map_forward is True:
             map_index += 1
             if map_index == 1:
-                current_map = Tutorial_Area = Map_02(npc_sprites, dialog_package, enemy_images, enemy_sprites)
+                current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites)
                 fursa.rect.x = current_map.spawnx
                 fursa.rect.y = current_map.spawny
             fursa.map_foward = False
