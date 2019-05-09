@@ -1,5 +1,4 @@
 import pygame as pg
-from directory_change import files
 from spritesheet import spritesheet
 from TiledMap import TiledMap
 from npc import Masir_sprite
@@ -7,11 +6,11 @@ from npc import Masir_sprite
 
 # Starting area.
 class Map_01():
-    def __init__(self, dialog_package, npc_sprites):
-        file = files()
+    def __init__(self, dialog_package, npc_sprites, fi):
+        self.fi = fi
 
         # Map graphics and music.
-        file.cd('Maps\Map_01')
+        self.fi.cd('Maps\Map_01')
         self.map = TiledMap('Map_01_1920x1080.tmx')
         self.map.make_map()
         self.blockers = self.map.blockers
@@ -50,7 +49,7 @@ class Map_01():
         self.end_sounds = [self.portal_aura]
 
         # Declare npcs.
-        self.Masir = Masir_sprite(800, 600)
+        self.Masir = Masir_sprite(800, 600, self.fi)
         npc_sprites.add(self.Masir)
 
         # Dialog system.

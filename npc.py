@@ -1,13 +1,12 @@
 import pygame as pg
-from directory_change import files
 
 
 class Masir_sprite(pg.sprite.Sprite):
-    def __init__(self, spawnx, spawny):
+    def __init__(self, spawnx, spawny, fi):
         super().__init__()
-        file = files()
+        self.fi = fi
         # Initialize frame parameters. Frames are uploaded once using upload_frames.
-        self.upload_frames(file)
+        self.upload_frames()
         self.current_frames = self.all_frames[0]
         self.image = self.current_frames[0]
         self.facing_right = True
@@ -29,7 +28,7 @@ class Masir_sprite(pg.sprite.Sprite):
         self.gravity_dt = 0
         self.frame_dt = 0
 
-    def upload_frames(self, file):
+    def upload_frames(self):
 
         """ Function that uploads and stores all frames for Masir during init.
             Created separately for organizational purposes. """
@@ -49,8 +48,8 @@ class Masir_sprite(pg.sprite.Sprite):
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):
-            file.cd(directory)
-            for img_file in file.file_list():
+            self.fi.cd(directory)
+            for img_file in self.fi.file_list():
                 self.all_frames[i].append(pg.transform.scale(pg.image.load(img_file).convert_alpha(), (256, 256)))
 
         # Create a list of number of frames for each animation. Used to know when frame_index should be reset.

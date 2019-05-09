@@ -1,15 +1,14 @@
 import pygame as pg
-from directory_change import files
 from spritesheet import spritesheet
 
 class enemy_sprite_frames():
-    def __init__(self):
-        file = files()
+    def __init__(self, fi):
+        self.fi = fi
         self.skeleton_frames = []
-        self.skeleton_frames_func(file)
+        self.skeleton_frames_func()
 
-    def skeleton_frames_func(self, file):
-        directory = file.cd('Enemies\Skeleton\Sprite Sheets')
+    def skeleton_frames_func(self):
+        self.fi.cd('Enemies\Skeleton\Sprite Sheets')
 
         # Spritesheet coordinates.                                                               Indexes
         coordinates = [
@@ -25,7 +24,7 @@ class enemy_sprite_frames():
 
         self.skeleton_frame_maxes = [len(frame_amount) for frame_amount in coordinates]
 
-        spritesheets = [spritesheet(sprite_sheet) for sprite_sheet in file.file_list()]
+        spritesheets = [spritesheet(sprite_sheet) for sprite_sheet in self.fi.file_list()]
         spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey = (0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
 
         for i, ss_sep in enumerate(spritesheets_separate):

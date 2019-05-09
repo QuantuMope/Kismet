@@ -1,5 +1,4 @@
 import pygame as pg
-from directory_change import files
 from TiledMap import TiledMap
 from enemies import skeleton
 from operator import itemgetter
@@ -7,11 +6,11 @@ from operator import itemgetter
 
 # Area 2
 class Map_02():
-    def __init__(self, dialog_package, npc_sprites, enemy_frames, enemy_sprites):
-        file = files()
+    def __init__(self, dialog_package, npc_sprites, enemy_frames, enemy_sprites, fi):
+        self.fi = fi
 
         # Map graphics and music.
-        file.cd('Maps\Map_02')
+        self.fi.cd('Maps\Map_02')
         self.map = TiledMap('Map_02.tmx')
         self.map.make_map()
         self.blockers = self.map.blockers
@@ -47,7 +46,7 @@ class Map_02():
         self.change_turn = False
 
         # User interface boxes. There is a combat, status, and description box.
-        file.cd('UI\Combat')
+        self.fi.cd('UI\Combat')
         self.combat_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
         self.status_box = pg.transform.scale(self.combat_box, (670, 300))
         self.combat_box = pg.transform.scale(self.combat_box, (690, 300))
@@ -76,7 +75,7 @@ class Map_02():
         self.pointer_frame = 0
 
         # Initiate fonts.
-        file.cd('UI\Fonts')
+        self.fi.cd('UI\Fonts')
         self.combat_font = pg.freetype.Font('ferrum.otf', size=24)
         self.hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
 
@@ -86,7 +85,7 @@ class Map_02():
         self.battle_map.front_surface.blit(self.description_box, (1410, 750))
 
         # Declare enemys.
-        skeleton_01 = skeleton(enemy_frames, 600, 500)
+        skeleton_01 = skeleton(enemy_frames, 600, 500, self.fi)
         enemy_sprites.add(skeleton_01)
 
         # Dialog system.

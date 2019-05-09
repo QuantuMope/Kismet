@@ -1,4 +1,3 @@
-from directory_change import files
 import pygame as pg
 from Fursa_projectiles import SPIRIT_BLAST, blast_frames
 
@@ -6,11 +5,11 @@ from Fursa_projectiles import SPIRIT_BLAST, blast_frames
 # Fursa sprite. The main character of the game
 # Contains the pygame eventloop for non-cutscenes and non-battles.
 class Fursa_sprite(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, fi):
         super().__init__()
-        file = files()
+        self.fi = fi
         # Initialize frame parameters. Frames are uploaded once using upload_frames.
-        self.upload_frames(file)
+        self.upload_frames()
         self.current_frames = self.all_frames[0]
         self.image = self.current_frames[0]
         self.facing_right = True
@@ -18,7 +17,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.frame_speed = 200
         self.frame_index = 0
         # Projectile animation frames.
-        fursa_projectile = blast_frames()
+        fursa_projectile = blast_frames(fi)
         self.projectile_frames = fursa_projectile.frames
 
         # Sprite rect init.
@@ -49,7 +48,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.jump_dt = 0
 
         # Load sound effects.
-        file.cd('Players\Fursa')
+        self.fi.cd('Players\Fursa')
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
@@ -99,7 +98,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                                         '']
                                     }
 
-    def upload_frames(self, file):
+    def upload_frames(self):
 
         """ Function that uploads and stores all frames for Fursa during init.
             Created separately for organizational purposes. """
@@ -125,8 +124,8 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):
-            file.cd(directory)
-            for img_file in file.file_list():
+            self.fi.cd(directory)
+            for img_file in self.fi.file_list():
                 self.all_frames[i].append(pg.transform.scale(pg.image.load(img_file).convert_alpha(), (128, 128)))
         # Hit animation is simply the first couple of frames from the death animation.
         self.all_frames[6] = (self.all_frames[5][0:7])
@@ -494,7 +493,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                         pg.time.wait(1000)
 
                         # Initiate music.
-                        file.cd('Maps\Map_02')
+                        self.fi.cd('Maps\Map_02')
                         battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
                         pg.mixer.music.play(loops=-1, start=0.0)
 

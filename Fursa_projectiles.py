@@ -1,5 +1,4 @@
 from spritesheet import spritesheet
-from directory_change import files
 import pygame as pg
 
 
@@ -9,10 +8,10 @@ class blast_frames():
         Created to avoid having to load from the hard drive every time a projectile is created.
         Is used in Fursa's init. """
 
-    def __init__(self):
-        file = files()
+    def __init__(self, fi):
+        self.fi = fi
         # Fursa's attack blast properly separated into frames into a list from a spritesheet.
-        file.cd("Players\Fursa")
+        self.fi.cd("Players\Fursa")
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_ss = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
@@ -27,6 +26,7 @@ class blast_frames():
         self.impact_frames_l = [pg.transform.flip(self.impact_frames_r[i], True, False) for i in range(0, len(self.impact_frames_r))]
 
         self.frames = [self.blast_frames_r, self.blast_frames_l, self.impact_frames_r, self.impact_frames_l]
+
 
 # Fursa's SPIRIT BLAST projectile sprite.
 class SPIRIT_BLAST(pg.sprite.Sprite):

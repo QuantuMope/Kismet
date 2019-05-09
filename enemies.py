@@ -1,11 +1,10 @@
 import pygame as pg
-from directory_change import files
 
 
 class skeleton(pg.sprite.Sprite):
-    def __init__(self, frames, spawnx, spawny):
+    def __init__(self, frames, spawnx, spawny, fi):
         super().__init__()
-        file = files()
+        self.fi = fi
 
         # Initialize frame parameters.
         self.frames = frames.skeleton_frames
@@ -52,7 +51,7 @@ class skeleton(pg.sprite.Sprite):
         self.turn_determiner = [self.party_spawn, self.speed]
 
         # Load sound effects.
-        file.cd("Enemies\Skeleton")
+        self.fi.cd("Enemies\Skeleton")
         self.swing_sound = pg.mixer.Sound('swing.wav')
 
     # Skeleton AI.

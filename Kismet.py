@@ -1,12 +1,28 @@
 import pygame as pg
 import pygame.freetype
+import os
 
 # Import Game Modules
-from directory_change import files
 from Fursa import Fursa_sprite
 from enemy_frames import enemy_sprite_frames
 from Map_01 import Map_01
 from Map_02 import Map_02
+
+
+class files(object):
+    def __init__(self):
+        base_path = os.path.dirname(os.path.realpath(__file__))
+        self.main_directory = base_path
+
+    def cd(self, path):
+        new_path = '\\' + (path)
+        final_path = self.main_directory + new_path
+        os.chdir(final_path)
+        self.current_directory = final_path
+
+    def file_list(self):
+        files = os.listdir(self.current_directory)
+        return files
 
 
 # Game Start.
@@ -36,7 +52,7 @@ def main():
     fps_font = pg.freetype.Font('digital-7.ttf', size=48)
 
     # Declare character sprites.
-    fursa = Fursa_sprite()
+    fursa = Fursa_sprite(fi)
     character_sprites = pg.sprite.GroupSingle()
     character_sprites.add(fursa)
 
@@ -44,7 +60,7 @@ def main():
     npc_sprites = pg.sprite.Group()
 
     # Declare enemy sprites.
-    enemy_images = enemy_sprite_frames()
+    enemy_images = enemy_sprite_frames(fi)
     enemy_sprites = pg.sprite.Group()
 
     # Declare particle sprites.
@@ -52,10 +68,10 @@ def main():
 
     # Declare Initial Map.
     #Test
-    #current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites)
+    #current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites, fi)
 
     #Normal
-    Starting_Area = Map_01(dialog_package, npc_sprites)
+    Starting_Area = Map_01(dialog_package, npc_sprites, fi)
     current_map = Starting_Area
 
     # Declare internal variables.
@@ -158,7 +174,7 @@ def main():
         if fursa.map_forward is True:
             map_index += 1
             if map_index == 1:
-                current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites)
+                current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites, fi)
                 fursa.rect.x = current_map.spawnx
                 fursa.rect.y = current_map.spawny
             fursa.map_foward = False
