@@ -33,7 +33,7 @@ def main():
     pg.init()
     pg.event.set_allowed([pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
     resolution = width, height = 1920, 1080
-    flags = pg.FULLSCREEN | pg.HWSURFACE | pg.DOUBLEBUF
+    flags = pg.HWSURFACE | pg.DOUBLEBUF #| pg.FULLSCREEN
     screen = pg.display.set_mode(resolution, flags)
     screen.set_alpha(None)
     pg.display.set_caption('Kismet')
@@ -182,6 +182,7 @@ def main():
         if fursa.battle_forward is True:
             current_map.map_first_time = True
             fursa.battle_forward = False
+
 
 
 if __name__ == '__main__':
