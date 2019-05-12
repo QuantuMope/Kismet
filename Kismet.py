@@ -69,12 +69,12 @@ def main():
     particle_sprites = pg.sprite.Group()
 
     # Declare Initial Map.
-    #Test
-    #current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites, fi)
+    # Test
+    current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites, fi)
 
     #Normal
-    Starting_Area = Map_01(dialog_package, npc_sprites, fi)
-    current_map = Starting_Area
+    # Starting_Area = Map_01(dialog_package, npc_sprites, fi)
+    # current_map = Starting_Area
 
     # Declare internal variables.
     map_index = 0

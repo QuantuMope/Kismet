@@ -1,6 +1,7 @@
 import pygame as pg
 
 
+# Takes care of the dialog system in map classes. Serves as a parent class.
 class dialog_system():
     def __init__(self, dialog_package):
 
