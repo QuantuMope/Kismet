@@ -121,10 +121,10 @@ def main():
 
     # Declare Initial Map.
     # Test
-    current_map = Tutorial_Area = Map_02(package, npc_sprites, enemy_images, enemy_sprites, fi)
+    current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
 
     #Normal
-    # Starting_Area = Map_01(package, npc_sprites, fi)
+    # Starting_Area = Map_01(package, sprites, fi)
     # current_map = Starting_Area
 
     # Declare internal variables.
@@ -164,8 +164,7 @@ def main():
 
         # Layer 3: Character sprites update.
 
-        character_sprites.update(time, dt, current_map, screen,
-                                 character_sprites, enemy_sprites, particle_sprites, fi)
+        character_sprites.update(time, dt, current_map, screen, sprites, fi)
         # pg.draw.rect(screen, black, fursa.refresh_rect)
         character_sprites.draw(screen)
         character_rects = [fursa.refresh_rect]
@@ -227,7 +226,7 @@ def main():
         if fursa.map_forward is True:
             map_index += 1
             if map_index == 1:
-                current_map = Tutorial_Area = Map_02(package, npc_sprites, enemy_images, enemy_sprites, fi)
+                current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
                 fursa.rect.x = current_map.spawnx
                 fursa.rect.y = current_map.spawny
             fursa.map_foward = False

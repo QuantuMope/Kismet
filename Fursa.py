@@ -335,7 +335,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         if self.prev_state != self.state:
             self.frame_index = 0
 
-    def update(self, time, dt, map, screen, character_sprites, enemy_sprites, particle_sprites, file):
+    def update(self, time, dt, map, screen, sprites, file):
 
         """ Main update function. Continuously called at all times in game loop main()
             Updates Fursa's frame and hitbox. Monitors platform interaction.
@@ -420,7 +420,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                 elif self.frame_index == 8:
                     self.attack_noise.play()
                     blast = SPIRIT_BLAST(self)
-                    particle_sprites.add(blast)
+                    sprites['particles'].add(blast)
 
         # Gravity emulation using map platforms.
         for block in map.blockers:

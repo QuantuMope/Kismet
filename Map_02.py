@@ -8,7 +8,7 @@ from base_map import base_map
 
 # Area 2
 class Map_02(dialog_system, combat_system, base_map):
-    def __init__(self, package, npc_sprites, enemy_frames, enemy_sprites, fi):
+    def __init__(self, package, sprites, enemy_frames, fi):
         dialog_system.__init__(self, package)
         combat_system.__init__(self, package)
         base_map.__init__(self, package)
@@ -37,7 +37,7 @@ class Map_02(dialog_system, combat_system, base_map):
 
         # Declare enemys.
         skeleton_01 = skeleton(enemy_frames, 600, 500, self.fi)
-        enemy_sprites.add(skeleton_01)
+        sprites['enemy'].add(skeleton_01)
 
         # Dialog system.
         # The script is labeled using self.event. Each dialogue references a list containing two strings.

@@ -8,7 +8,7 @@ from base_map import base_map
 
 # Starting area.
 class Map_01(dialog_system, base_map):
-    def __init__(self, package, npc_sprites, fi):
+    def __init__(self, package, sprites, fi):
         super().__init__(package)
         self.fi = fi
 
@@ -22,7 +22,7 @@ class Map_01(dialog_system, base_map):
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600, self.fi)
-        npc_sprites.add(self.Masir)
+        sprites['npc'].add(self.Masir)
 
         # Dialog system.
         # The script is labeled using self.event. Each dialogue references a list containing two strings.
