@@ -1,6 +1,7 @@
 import pygame as pg
 import pygame.freetype
 import os
+from spritesheet import spritesheet
 
 # Import Game Modules
 from Fursa import Fursa_sprite
@@ -56,32 +57,41 @@ def main():
     base_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
     status_box = pg.transform.scale(base_box, (670, 300))
     combat_box = pg.transform.scale(base_box, (690, 300))
-    combat_box_rect = pg.Rect((720, 750), (690, 300))
     description_box = pg.transform.scale(base_box, (460, 300))
-    description_rect = pg.Rect((1410, 750), (460, 300))
     # Pointer indicating whose turn it is during a battle.
     pointer = pg.image.load('black_triangle.png').convert_alpha()
     pointer = pg.transform.scale(pointer, (60, 42))
-    point_rect = pointer.get_rect()
     fi.cd('UI\Fonts')
     combat_font = pg.freetype.Font('ferrum.otf', size=24)
     hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
     fi.cd('Players\Fursa')
     battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
     battle_impact_noise = pg.mixer.Sound('battle_start.wav')
-    battle_impact_noise.set_volume(0.50)
 
+    # Portal animation.
+    fi.cd('Maps\Map_01')
+    coordinates = []
+    for i in range(0, 7):
+        coordinates.extend([(100 * e, 100 * i, 100, 100) for e in range(0, 8)])
+    coordinates.extend([(100 * e, 700, 100, 100) for e in range(0, 5)])
+    portal_images_ss = spritesheet('12_nebula_spritesheet.png')
+    portal_images_separate = portal_images_ss.images_at(coordinates, colorkey=(0, 0, 0))
+    portal_images = [pg.transform.scale(portal_images_separate[i], (160, 160))
+                     for i in range(0, len(portal_images_separate))]
+    portal_blast = pg.mixer.Sound('portal_noise.wav')
+    portal_aura = pg.mixer.Sound('portal_aura_noise.wav')
 
     package = {"dialogBox": dialog_box,
                "dialogFont": dialog_font,
                "dialogNoise": dialog_noise,
                "statusBox": status_box,
-               "combatBox": [combat_box, combat_box_rect],
-               "descriptionBox": [description_box, description_rect],
-               "pointer": [pointer, point_rect],
+               "combatBox": combat_box,
+               "descriptionBox": description_box,
+               "pointer": pointer,
                "combatFont": combat_font,
                "hpmpFont": hpmp_font,
-               "battleNoises": [battle_sword_aftersound, battle_impact_noise]}
+               "battleNoises": [battle_sword_aftersound, battle_impact_noise],
+               "portal": [portal_images, portal_blast, portal_aura]}
 
     # FPS Initialization.
     fi.cd('UI\Fonts')

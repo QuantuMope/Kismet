@@ -11,7 +11,7 @@ class Map_02(dialog_system, combat_system, base_map):
     def __init__(self, package, npc_sprites, enemy_frames, enemy_sprites, fi):
         dialog_system.__init__(self, package)
         combat_system.__init__(self, package)
-        base_map.__init__(self)
+        base_map.__init__(self, package)
         self.fi = fi
 
         # Map graphics and music.
@@ -29,20 +29,6 @@ class Map_02(dialog_system, combat_system, base_map):
         self.battle_map = TiledMap('battle_scene.tmx')
         self.battle_map.make_map()
         self.battle_spawn_pos = self.battle_map.battle_spawns
-
-        # Move selection highlighter.
-        self.current_slot = 1
-        white = (255, 255, 255)
-        black = (0, 0, 0)
-        attack_select = white
-        bag_select = black
-        run_select = black
-        spell_select = black
-        self.combat_selector = {1: attack_select,
-                                2: bag_select,
-                                3: run_select,
-                                4: spell_select
-                                }
 
         # Add the combat boxes to the battle map front surface. Greatly improves fps due to alpha pixels.
         self.battle_map.front_surface.blit(self.status_box, (50, 750))

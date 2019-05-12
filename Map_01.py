@@ -20,24 +20,6 @@ class Map_01(dialog_system, base_map):
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
         pg.mixer.music.play(loops=-1, start=0.0)
 
-        # Portal animation.
-        coordinates = []
-        for i in range(0,7):
-            coordinates.extend([(100 * e, 100 * i, 100, 100) for e in range(0, 8)])
-        coordinates.extend([(100 * e, 700, 100, 100) for e in range(0, 5)])
-        portal_images_ss = spritesheet('12_nebula_spritesheet.png')
-        portal_images_separate = portal_images_ss.images_at(coordinates, colorkey=(0, 0, 0))
-        self.portal_images = [pg.transform.scale(portal_images_separate[i], (160, 160)) for i in range(0, len(portal_images_separate))]
-        self.p_index = 0
-        self.portal_start = False
-        self.portal_blast = pg.mixer.Sound('portal_noise.wav')
-        self.portal_blast.set_volume(0.50)
-        self.portal_aura = pg.mixer.Sound('portal_aura_noise.wav')
-        self.portal_aura.set_volume(0.40)
-        self.portal_blast_start = True
-        self.portal_aura_start = True
-        self.portal_rect = pg.Rect(1115, 660, 160, 160)
-
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600, self.fi)
         npc_sprites.add(self.Masir)

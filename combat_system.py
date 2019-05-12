@@ -7,16 +7,17 @@ class combat_system():
     def __init__(self, package):
 
         self.status_box = package['statusBox']
-        self.combat_box = package['combatBox'][0]
-        self.combat_box_rect = package['combatBox'][1]
-        self.description_box = package['descriptionBox'][0]
-        self.description_rect = package['descriptionBox'][1]
-        self.pointer = package['pointer'][0]
-        self.point_rect = package['pointer'][1]
+        self.combat_box = package['combatBox']
+        self.combat_box_rect = pg.Rect((720, 750), (690, 300))
+        self.description_box = package['descriptionBox']
+        self.description_rect = pg.Rect((1410, 750), (460, 300))
+        self.pointer = package['pointer']
+        self.point_rect = self.pointer.get_rect()
         self.combat_font = package['combatFont']
         self.hpmp_font = package['hpmpFont']
         self.battle_sword_aftersound = package['battleNoises'][0]
         self.battle_impact_noise = package['battleNoises'][1]
+        self.battle_impact_noise.set_volume(0.50)
 
         # Battle Transition Screen.
         resolution = width, height = 1920, 1080
@@ -25,6 +26,7 @@ class combat_system():
         self.battle_transition_screen.fill(black)
 
         # States.
+        self.battle_init = True
         self.turn_order = []
         self.turn_i = 0
         self.battle_command = 0
