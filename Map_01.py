@@ -141,5 +141,5 @@ class Map_01(dialog_system, base_map):
             if self.p_index == len(self.portal_images):
                 self.p_index = 0
 
-    def update(self, fursa, enemy_sprites, screen):
+    def update(self, fursa, sprites, screen):
         self.cutscene_event(fursa, screen)

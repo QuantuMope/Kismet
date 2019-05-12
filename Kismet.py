@@ -66,6 +66,11 @@ def main():
     fi.cd('UI\Fonts')
     combat_font = pg.freetype.Font('ferrum.otf', size=24)
     hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
+    fi.cd('Players\Fursa')
+    battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
+    battle_impact_noise = pg.mixer.Sound('battle_start.wav')
+    battle_impact_noise.set_volume(0.50)
+
 
     package = {"dialogBox": dialog_box,
                "dialogFont": dialog_font,
@@ -75,7 +80,8 @@ def main():
                "descriptionBox": [description_box, description_rect],
                "pointer": [pointer, point_rect],
                "combatFont": combat_font,
-               "hpmpFont": hpmp_font}
+               "hpmpFont": hpmp_font,
+               "battleNoises": [battle_sword_aftersound, battle_impact_noise]}
 
     # FPS Initialization.
     fi.cd('UI\Fonts')
@@ -97,6 +103,11 @@ def main():
 
     # Declare particle sprites.
     particle_sprites = pg.sprite.Group()
+
+    sprites = {"character": character_sprites,
+               "npc": npc_sprites,
+               "enemy": enemy_sprites,
+               "particles": particle_sprites}
 
     # Declare Initial Map.
     # Test
@@ -174,7 +185,7 @@ def main():
 
         # Layer 7: Cutscene animations and fps.
 
-        current_map.update(fursa, enemy_sprites, screen)
+        current_map.update(fursa, sprites, screen)
         fps_text, rect = fps_font.render(str(int(round(clock.get_fps()))))
         screen.blit(fps_text, (1860, 10))
 

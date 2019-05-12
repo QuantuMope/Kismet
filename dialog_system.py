@@ -95,33 +95,3 @@ class dialog_system():
             screen.blit(self.dialog_2_final, (600, 1005))
             screen.blit(self.dialog_name_final, (600, 905))
 
-    def combat_descrip(self, text, screen):
-        # Function to render and blit combat move descriptions.
-        rep = 0
-        new_text = []
-        e = 0
-        i = 0
-        old_i = 0
-        # Wrap text multiple times. Shown as a short paragraph.
-        # Algorithm is coded to show text immediately.
-        while i <= len(text):
-            i = old_i + 25
-            if i <= len(text):
-                while text[i] != ' ':
-                    i += 1
-                    if i > old_i + 30:
-                        while text[i] != ' ':
-                            i -= 1
-                        break
-                new_text.append(text[e:i])
-                combat_text = new_text[rep]
-                combat_descrip, rect = self.dialog_font.render(combat_text)
-                screen.blit(combat_descrip, (1430, 800 + 50 * rep))
-                rep += 1
-                old_i = i
-                e = i + 1
-            else:
-                new_text.append(text[e:i])
-                combat_text = new_text[rep]
-                combat_descrip, rect = self.dialog_font.render(combat_text)
-                screen.blit(combat_descrip, (1430, 800 + 50 * rep))

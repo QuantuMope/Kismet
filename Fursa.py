@@ -55,15 +55,6 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
         self.walk_dirt.set_volume(0.15)
         self.teleport_noise = pg.mixer.Sound('teleport.wav')
-        self.battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
-        self.battle_impact_noise = pg.mixer.Sound('battle_start.wav')
-        self.battle_impact_noise.set_volume(0.50)
-
-        # Battle Transition Screen.
-        resolution = width, height = 1920, 1080
-        black = (0, 0, 0)
-        self.battle_transition = pg.Surface(resolution)
-        self.battle_transition.fill(black)
 
         # Character attributes and battle states.
         self.level = 1
@@ -461,60 +452,3 @@ class Fursa_sprite(pg.sprite.Sprite):
                             break
                     if self.on_ground is True:
                         break
-
-        """ Enemy collision detection. Transition to battle mode. (turn-based combat)
-            All code pertaining to transitioning into combat mode is located here.
-            Once transition is completed, pygame event loop moves to Map.py file.
-            Transition includes setting spawn locations and changing map surfaces. """
-
-        # If not already in a battle, and hit by an enemy's attack, transition to battle mode.
-        if map.battle is False:
-            for enemy in enemy_sprites:
-                if enemy.attack:
-                    if self.hitbox_rect.colliderect(enemy.rect) and enemy.frame_index == 8:
-
-                        # Set frame to a hit frame.
-                        self.image = self.all_frames[6][2]
-
-                        # Pause impact frame for 1s.
-                        self.battle_impact_noise.play()
-                        pg.mixer.music.stop()
-                        enemy_sprites.draw(screen)
-                        character_sprites.draw(screen)
-                        screen.blit(map.map.front_surface, (0, 0))
-                        pg.display.flip()
-                        pg.time.wait(1000)
-                        # Clear background to black for 1s.
-                        screen.blit(self.battle_transition, (0, 0))
-                        enemy_sprites.draw(screen)
-                        character_sprites.draw(screen)
-                        pg.display.flip()
-                        self.battle_sword_aftersound.play()
-                        pg.time.wait(1000)
-
-                        # Initiate music.
-                        self.fi.cd('Maps\Map_02')
-                        battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
-                        pg.mixer.music.play(loops=-1, start=0.0)
-
-                        # Initialize states.
-                        self.state = 0
-                        self.frame_index = 0
-                        self.facing_right = True
-                        enemy.facing_right = False
-                        self.jump = False
-                        self.battle_forward = True
-                        map.battle = True
-
-                        # Spawn locations.
-                        self.rect.centerx = map.battle_spawn_pos[self.party_spawn].centerx
-                        self.rect.centery = map.battle_spawn_pos[self.party_spawn].centery
-                        enemy.rect.centerx = map.battle_spawn_pos[enemy.party_spawn].centerx
-                        enemy.rect.centery = map.battle_spawn_pos[enemy.party_spawn].centery
-
-
-            """ Battle Platform Layout.
-                                                      Midpoint for Ranged Attacks
-                                          Ally                       |                  Enemies
-
-    Spawn Location Indexes    ------0---------1-----------2----------6-----------4---------5--------6------"""
