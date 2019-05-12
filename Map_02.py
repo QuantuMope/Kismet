@@ -2,11 +2,13 @@ import pygame as pg
 from TiledMap import TiledMap
 from enemies import skeleton
 from operator import itemgetter
+from dialog import dialog_system
 
 
 # Area 2
-class Map_02():
+class Map_02(dialog_system):
     def __init__(self, dialog_package, npc_sprites, enemy_frames, enemy_sprites, fi):
+        super().__init__(dialog_package)
         self.fi = fi
 
         # Map graphics and music.

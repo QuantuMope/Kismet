@@ -9,7 +9,10 @@ from Map_01 import Map_01
 from Map_02 import Map_02
 
 
-class files(object):
+# Files class is in Kismet.py because a single file object is declared
+# locally that assigns the main base directory. The file object is then
+# passed down to other classes.
+class files():
     def __init__(self):
         base_path = os.path.dirname(os.path.realpath(__file__))
         self.main_directory = base_path
@@ -25,7 +28,6 @@ class files(object):
         return files
 
 
-# Game Start.
 def main():
     fi = files()
     # Initiate pygame parameters.
