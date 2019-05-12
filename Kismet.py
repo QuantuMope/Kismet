@@ -41,17 +41,42 @@ def main():
     pg.display.set_caption('Kismet')
     clock = pg.time.Clock()
 
+    """ Loads many graphical parameters here so that all data can be initialized once,
+        cached, and reused by all classes. """
+
     # Dialog Initialization.
     fi.cd('UI\Dialog')
     dialog_box = pg.image.load('dialogue_box.png').convert_alpha()
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
     dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size=24)
     dialog_noise = pg.mixer.Sound('chat_noise.wav')
-    dialog_package = [dialog_box, dialog_font, dialog_noise]
+
+    # User interface boxes. There is a combat, status, and description box.
+    fi.cd('UI\Combat')
+    base_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
+    status_box = pg.transform.scale(base_box, (670, 300))
+    combat_box = pg.transform.scale(base_box, (690, 300))
+    combat_box_rect = pg.Rect((720, 750), (690, 300))
+    description_box = pg.transform.scale(base_box, (460, 300))
+    description_rect = pg.Rect((1410, 750), (460, 300))
+    fi.cd('UI\Fonts')
+    combat_font = pg.freetype.Font('ferrum.otf', size=24)
+    hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
+
+    package = {"dialogBox": dialog_box,
+               "dialogFont": dialog_font,
+               "dialogNoise": dialog_noise,
+               "statusBox": status_box,
+               "combatBox": [combat_box, combat_box_rect],
+               "descriptionBox": [description_box, description_rect],
+               "combatFont": combat_font,
+               "hpmpFont": hpmp_font}
 
     # FPS Initialization.
     fi.cd('UI\Fonts')
     fps_font = pg.freetype.Font('digital-7.ttf', size=48)
+
+    """ Sprite group initialization done below. """
 
     # Declare character sprites.
     fursa = Fursa_sprite(fi)
@@ -70,10 +95,10 @@ def main():
 
     # Declare Initial Map.
     # Test
-    current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites, fi)
+    current_map = Tutorial_Area = Map_02(package, npc_sprites, enemy_images, enemy_sprites, fi)
 
     #Normal
-    # Starting_Area = Map_01(dialog_package, npc_sprites, fi)
+    # Starting_Area = Map_01(package, npc_sprites, fi)
     # current_map = Starting_Area
 
     # Declare internal variables.
@@ -176,7 +201,7 @@ def main():
         if fursa.map_forward is True:
             map_index += 1
             if map_index == 1:
-                current_map = Tutorial_Area = Map_02(dialog_package, npc_sprites, enemy_images, enemy_sprites, fi)
+                current_map = Tutorial_Area = Map_02(package, npc_sprites, enemy_images, enemy_sprites, fi)
                 fursa.rect.x = current_map.spawnx
                 fursa.rect.y = current_map.spawny
             fursa.map_foward = False

@@ -2,13 +2,15 @@ import pygame as pg
 from TiledMap import TiledMap
 from enemies import skeleton
 from operator import itemgetter
-from dialog import dialog_system
+from dialog_system import dialog_system
+from combat_system import combat_system
 
 
 # Area 2
-class Map_02(dialog_system):
-    def __init__(self, dialog_package, npc_sprites, enemy_frames, enemy_sprites, fi):
-        super().__init__(dialog_package)
+class Map_02(dialog_system, combat_system):
+    def __init__(self, package, npc_sprites, enemy_frames, enemy_sprites, fi):
+        dialog_system.__init__(self,package)
+        combat_system.__init__(self, package)
         self.fi = fi
 
         # Map graphics and music.
@@ -47,14 +49,6 @@ class Map_02(dialog_system):
         self.returned = True
         self.change_turn = False
 
-        # User interface boxes. There is a combat, status, and description box.
-        self.fi.cd('UI\Combat')
-        self.combat_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
-        self.status_box = pg.transform.scale(self.combat_box, (670, 300))
-        self.combat_box = pg.transform.scale(self.combat_box, (690, 300))
-        self.combat_box_rect = pg.Rect((720, 750), (690, 300))
-        self.description_box = pg.transform.scale(self.combat_box, (460, 300))
-        self.description_rect = pg.Rect((1410, 750), (460, 300))
 
         # Move selection highlighter.
         self.current_slot = 1
@@ -70,16 +64,13 @@ class Map_02(dialog_system):
                                 4: spell_select
                                 }
 
+        self.fi.cd('UI\Combat')
         # Pointer indicating whose turn it is during a battle.
         self.pointer = pg.image.load('black_triangle.png').convert_alpha()
         self.pointer = pg.transform.scale(self.pointer, (60, 42))
         self.point_rect = self.pointer.get_rect()
         self.pointer_frame = 0
 
-        # Initiate fonts.
-        self.fi.cd('UI\Fonts')
-        self.combat_font = pg.freetype.Font('ferrum.otf', size=24)
-        self.hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
 
         # Add the combat boxes to the battle map front surface. Greatly improves fps due to alpha pixels.
         self.battle_map.front_surface.blit(self.status_box, (50, 750))

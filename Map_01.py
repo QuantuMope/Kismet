@@ -2,7 +2,7 @@ import pygame as pg
 from spritesheet import spritesheet
 from TiledMap import TiledMap
 from npc import Masir_sprite
-from dialog import dialog_system
+from dialog_system import dialog_system
 
 
 # Starting area.

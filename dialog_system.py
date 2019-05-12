@@ -3,15 +3,15 @@ import pygame as pg
 
 # Takes care of the dialog system in map classes. Serves as a parent class.
 class dialog_system():
-    def __init__(self, dialog_package):
+    def __init__(self, package):
 
         # Dialog parameters.
         self.black_edge1 = pg.Rect((0, 0), (1920, 200))
         self.black_edge2 = pg.Rect((0, 880), (1920, 200))
         self.dialog_start = True
-        self.dialog_box = dialog_package[0]
-        self.dialog_font = dialog_package[1]
-        self.dialog_noise = dialog_package[2]
+        self.dialog_box = package['dialogBox']
+        self.dialog_font = package['dialogFont']
+        self.dialog_noise = package['dialogNoise']
         self.dialog_1_final = ''
         self.dialog_2_final = ''
         self.dialog_name_final = ''
