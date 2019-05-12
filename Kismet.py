@@ -121,11 +121,11 @@ def main():
 
     # Declare Initial Map.
     # Test
-    current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
+    #current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
 
     #Normal
-    # Starting_Area = Map_01(package, sprites, fi)
-    # current_map = Starting_Area
+    Starting_Area = Map_01(package, sprites, fi)
+    current_map = Starting_Area
 
     # Declare internal variables.
     map_index = 0
@@ -224,6 +224,9 @@ def main():
          ------------------------------------------------------------------------------ """
 
         if fursa.map_forward is True:
+            # Cancel any and all sounds in previous map upon exit. (such as portal noise)
+            for sound in current_map.end_sounds:
+                sound.stop()
             map_index += 1
             if map_index == 1:
                 current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
@@ -234,7 +237,6 @@ def main():
         if fursa.battle_forward is True:
             current_map.map_first_time = True
             fursa.battle_forward = False
-
 
 
 if __name__ == '__main__':

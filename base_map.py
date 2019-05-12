@@ -1,9 +1,14 @@
 import pygame as pg
+from combat_system import combat_system
+from dialog_system import dialog_system
 
 
-# Contains all parameters that all map classes contain. Serves as a parent class.
-class base_map():
+# Contains all parameters and methods that all map classes contain.
+# Serves as parent class to map classes.
+class base_map(combat_system, dialog_system):
     def __init__(self, package):
+        combat_system.__init__(self, package)
+        dialog_system.__init__(self, package)
 
         # States.
         self.cutscene = False
@@ -11,11 +16,6 @@ class base_map():
         self.battle = False
         self.event = 0
         self.map_first_time = True
-
-        # Refresh rects and sounds to end when map is terminated.
-        self.refresh_rects = []
-        self.ui = []
-        self.end_sounds = []
 
         # Portal parameters.
         self.p_index = 0
@@ -28,4 +28,9 @@ class base_map():
         self.portal_blast.set_volume(0.50)
         self.portal_aura = package['portal'][2]
         self.portal_aura.set_volume(0.40)
+
+        # Refresh rects and sounds to end when map is terminated.
+        self.refresh_rects = []
+        self.ui = []
+        self.end_sounds = [self.portal_aura]
 

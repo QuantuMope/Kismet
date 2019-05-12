@@ -226,9 +226,6 @@ class Fursa_sprite(pg.sprite.Sprite):
                 # If Fursa is in contact with a portal, allow transition to next map.
                 elif event.key == pg.K_w:
                     if self.rect.collidepoint(map.portal_rect.centerx, map.portal_rect.centery):
-                        # Cancel any and all sounds in previous map upon exit.
-                        for sound in map.end_sounds:
-                            sound.stop()
                         self.teleport_noise.play()
                         self.map_forward = True
 

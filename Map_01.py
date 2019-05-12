@@ -1,13 +1,11 @@
 import pygame as pg
-from spritesheet import spritesheet
 from TiledMap import TiledMap
 from npc import Masir_sprite
-from dialog_system import dialog_system
 from base_map import base_map
 
 
 # Starting area.
-class Map_01(dialog_system, base_map):
+class Map_01(base_map):
     def __init__(self, package, sprites, fi):
         super().__init__(package)
         self.fi = fi
@@ -22,11 +20,11 @@ class Map_01(dialog_system, base_map):
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600, self.fi)
+        self.Masir_dead = False
         sprites['npc'].add(self.Masir)
 
-        # Dialog system.
         # The script is labeled using self.event. Each dialogue references a list containing two strings.
-        # The first is the actual dialgoue while the second is the speaker.
+        # The first is the actual dialogue while the second is the speaker.
         self.script = {                0: ["Where am I?",   'Boy'],
                                        1: ["... Who am I?", 'Boy'],
                                        2: ["So you\'ve awakened, my child.", '???'],

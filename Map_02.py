@@ -1,17 +1,13 @@
 import pygame as pg
 from TiledMap import TiledMap
 from enemies import skeleton
-from dialog_system import dialog_system
-from combat_system import combat_system
 from base_map import base_map
 
 
 # Area 2
-class Map_02(dialog_system, combat_system, base_map):
+class Map_02(base_map):
     def __init__(self, package, sprites, enemy_frames, fi):
-        dialog_system.__init__(self, package)
-        combat_system.__init__(self, package)
-        base_map.__init__(self, package)
+        super().__init__(package)
         self.fi = fi
 
         # Map graphics and music.
@@ -39,9 +35,8 @@ class Map_02(dialog_system, combat_system, base_map):
         skeleton_01 = skeleton(enemy_frames, 600, 500, self.fi)
         sprites['enemy'].add(skeleton_01)
 
-        # Dialog system.
         # The script is labeled using self.event. Each dialogue references a list containing two strings.
-        # The first is the actual dialgoue while the second is the speaker.
+        # The first is the actual dialogue while the second is the speaker.
         self.script = {                0: ["Where'd you go?",   'Fursa'],
                                        1: ["*A voice starts to sound in Fursa's mind.*", ''],
                                        2: ["I am watching from afar, my child.", 'Masir'],

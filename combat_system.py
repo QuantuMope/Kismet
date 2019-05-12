@@ -2,7 +2,8 @@ import pygame as pg
 from operator import itemgetter
 
 
-# Takes care of the combat system in map classes. Serves as a parent class.
+# Takes care of the combat system in map classes.
+# Serves as one of the sibling parent class for base_map.
 class combat_system():
     def __init__(self, package):
 

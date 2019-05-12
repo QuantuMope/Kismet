@@ -1,7 +1,8 @@
 import pygame as pg
 
 
-# Takes care of the dialog system in map classes. Serves as a parent class.
+# Takes care of the dialog system in map classes.
+# Serves as one of the sibling parent class for base_map.
 class dialog_system():
     def __init__(self, package):
 
@@ -94,4 +95,3 @@ class dialog_system():
             screen.blit(self.dialog_1_final, (600, 955))
             screen.blit(self.dialog_2_final, (600, 1005))
             screen.blit(self.dialog_name_final, (600, 905))
-
