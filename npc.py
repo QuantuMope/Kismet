@@ -41,10 +41,7 @@ class Masir_sprite(pg.sprite.Sprite):
         # -----------------------0-------------1------------2----------
         self.all_frames = [idle_images, walk_images, action_images]
 
-        directories =           ["NPCs\Masir\Idle_Png"       # Idle animation.
-                                ,"NPCs\Masir\Walk_Png"       # Walk animation.
-                                ,"NPCs\Masir\Action_Png"]    # Action animation.
-
+        directories = ["NPCs Masir Idle_Png", "NPCs Masir Walk_Png", "NPCs Masir Action_Png"]
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):

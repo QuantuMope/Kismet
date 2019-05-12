@@ -11,7 +11,7 @@ class Map_02(base_map):
         self.fi = fi
 
         # Map graphics and music.
-        self.fi.cd('Maps\Map_02')
+        self.fi.cd('Maps Map_02')
         self.map = TiledMap('Map_02.tmx')
         self.map.make_map()
         self.blockers = self.map.blockers

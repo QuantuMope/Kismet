@@ -51,7 +51,7 @@ class skeleton(pg.sprite.Sprite):
         self.turn_determiner = [self.party_spawn, self.speed]
 
         # Load sound effects.
-        self.fi.cd("Enemies\Skeleton")
+        self.fi.cd("Enemies Skeleton")
         self.swing_sound = pg.mixer.Sound('swing.wav')
 
     # Skeleton AI.

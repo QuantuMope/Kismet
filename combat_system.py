@@ -104,7 +104,7 @@ class combat_system():
         pg.time.wait(1000)
 
         # Initiate music.
-        self.fi.cd('Maps\Map_02')
+        self.fi.cd('Maps Map_02')
         battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
         pg.mixer.music.play(loops=-1, start=0.0)
 

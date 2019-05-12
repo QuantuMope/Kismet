@@ -48,7 +48,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.jump_dt = 0
 
         # Load sound effects.
-        self.fi.cd('Players\Fursa')
+        self.fi.cd('Players Fursa')
         self.jump_noise = pg.mixer.Sound("jump_02.wav")
         self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
         self.attack_charge = pg.mixer.Sound("charge_up.wav")
@@ -106,12 +106,8 @@ class Fursa_sprite(pg.sprite.Sprite):
         # -----------------------0------------1------------2------------3--------------4--------------5-----------6-------#
         self.all_frames = [idle_images, walk_images, run_images, attack_images, shield_images, death_images, hit_images]
 
-        directories =      ["Players\Fursa\Idle"          # Idle animation.
-                           ,"Players\Fursa\Walk"          # Walking animation.
-                           ,"Players\Fursa\Run"           # Run animation.
-                           ,"Players\Fursa\Attack_01"     # Attack animation.
-                           ,"Players\Fursa\Attack_02"     # Shield animation.
-                           ,"Players\Fursa\Death"]        # Hit & Death animation.
+        directories = ["Players Fursa Idle", "Players Fursa Walk", "Players Fursa Run",
+                       "Players Fursa Attack_01", "Players Fursa Attack_02", "Players Fursa Death"]
 
         # Create a list containing lists with all animation frames. Each list is referenceable by the state ID shown above.
         for i, directory in enumerate(directories):

@@ -8,7 +8,7 @@ class enemy_sprite_frames():
         self.skeleton_frames_func()
 
     def skeleton_frames_func(self):
-        self.fi.cd('Enemies\Skeleton\Sprite Sheets')
+        self.fi.cd('Enemies Skeleton Sprite_Sheets')
 
         # Spritesheet coordinates.                                                               Indexes
         coordinates = [

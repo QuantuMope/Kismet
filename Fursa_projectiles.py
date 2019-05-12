@@ -11,7 +11,7 @@ class blast_frames():
     def __init__(self, fi):
         self.fi = fi
         # Fursa's attack blast properly separated into frames into a list from a spritesheet.
-        self.fi.cd("Players\Fursa")
+        self.fi.cd("Players Fursa")
         coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
         blast_image_ss = spritesheet('EnergyBall.png')
         blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
