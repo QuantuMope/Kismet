@@ -4,13 +4,15 @@ from enemies import skeleton
 from operator import itemgetter
 from dialog_system import dialog_system
 from combat_system import combat_system
+from base_map import base_map
 
 
 # Area 2
-class Map_02(dialog_system, combat_system):
+class Map_02(dialog_system, combat_system, base_map):
     def __init__(self, package, npc_sprites, enemy_frames, enemy_sprites, fi):
-        dialog_system.__init__(self,package)
+        dialog_system.__init__(self, package)
         combat_system.__init__(self, package)
+        base_map.__init__(self)
         self.fi = fi
 
         # Map graphics and music.
@@ -19,36 +21,15 @@ class Map_02(dialog_system, combat_system):
         self.map.make_map()
         self.blockers = self.map.blockers
 
-        # States.
-        self.cutscene = False
-        self.first_cutscene = True
-        self.battle = False
-        self.event = 0
-        self.map_first_time = True
-        self.battle_init = True
-
         # Fursa spawn location.
         self.spawnx = 100
         self.spawny = 500
-
-        # Refresh rects and sounds to end when map is terminated.
-        self.refresh_rects = []
-        self.ui = []
-        self.end_sounds = []
 
         # BATTLE MODE.
         # Battle map, spawn locations, turn order, and states.
         self.battle_map = TiledMap('battle_scene.tmx')
         self.battle_map.make_map()
         self.battle_spawn_pos = self.battle_map.battle_spawns
-        self.turn_order = []
-        self.turn_i = 0
-        self.battle_command = 0
-        self.action_select = False
-        self.animation_complete = True
-        self.returned = True
-        self.change_turn = False
-
 
         # Move selection highlighter.
         self.current_slot = 1
@@ -63,14 +44,6 @@ class Map_02(dialog_system, combat_system):
                                 3: run_select,
                                 4: spell_select
                                 }
-
-        self.fi.cd('UI\Combat')
-        # Pointer indicating whose turn it is during a battle.
-        self.pointer = pg.image.load('black_triangle.png').convert_alpha()
-        self.pointer = pg.transform.scale(self.pointer, (60, 42))
-        self.point_rect = self.pointer.get_rect()
-        self.pointer_frame = 0
-
 
         # Add the combat boxes to the battle map front surface. Greatly improves fps due to alpha pixels.
         self.battle_map.front_surface.blit(self.status_box, (50, 750))

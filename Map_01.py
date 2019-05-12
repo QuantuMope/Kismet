@@ -3,12 +3,13 @@ from spritesheet import spritesheet
 from TiledMap import TiledMap
 from npc import Masir_sprite
 from dialog_system import dialog_system
+from base_map import base_map
 
 
 # Starting area.
-class Map_01(dialog_system):
-    def __init__(self, dialog_package, npc_sprites, fi):
-        super().__init__(dialog_package)
+class Map_01(dialog_system, base_map):
+    def __init__(self, package, npc_sprites, fi):
+        super().__init__(package)
         self.fi = fi
 
         # Map graphics and music.
@@ -18,14 +19,6 @@ class Map_01(dialog_system):
         self.blockers = self.map.blockers
         self.music = pg.mixer.music.load('296 - The Tea Garden (Loop).mp3')
         pg.mixer.music.play(loops=-1, start=0.0)
-
-        # States.
-        self.cutscene = False
-        self.first_cutscene = True
-        self.battle = False
-        self.event = 0
-        self.Masir_dead = False
-        self.map_first_time = True
 
         # Portal animation.
         coordinates = []
@@ -44,11 +37,6 @@ class Map_01(dialog_system):
         self.portal_blast_start = True
         self.portal_aura_start = True
         self.portal_rect = pg.Rect(1115, 660, 160, 160)
-
-        # Refresh rects and sounds to end when map is terminated.
-        self.ui = []
-        self.refresh_rects = [self.portal_rect]
-        self.end_sounds = [self.portal_aura]
 
         # Declare npcs.
         self.Masir = Masir_sprite(800, 600, self.fi)

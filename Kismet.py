@@ -59,6 +59,10 @@ def main():
     combat_box_rect = pg.Rect((720, 750), (690, 300))
     description_box = pg.transform.scale(base_box, (460, 300))
     description_rect = pg.Rect((1410, 750), (460, 300))
+    # Pointer indicating whose turn it is during a battle.
+    pointer = pg.image.load('black_triangle.png').convert_alpha()
+    pointer = pg.transform.scale(pointer, (60, 42))
+    point_rect = pointer.get_rect()
     fi.cd('UI\Fonts')
     combat_font = pg.freetype.Font('ferrum.otf', size=24)
     hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
@@ -69,6 +73,7 @@ def main():
                "statusBox": status_box,
                "combatBox": [combat_box, combat_box_rect],
                "descriptionBox": [description_box, description_rect],
+               "pointer": [pointer, point_rect],
                "combatFont": combat_font,
                "hpmpFont": hpmp_font}
 
