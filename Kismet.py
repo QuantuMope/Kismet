@@ -42,7 +42,7 @@ def main():
     pg.init()
     pg.event.set_allowed([pg.KEYDOWN, pg.KEYUP, pg.MOUSEBUTTONDOWN])
     resolution = width, height = 1920, 1080
-    flags = pg.HWSURFACE | pg.DOUBLEBUF #| pg.FULLSCREEN
+    flags = pg.HWSURFACE | pg.DOUBLEBUF # | pg.FULLSCREEN
     screen = pg.display.set_mode(resolution, flags)
     screen.set_alpha(None)
     pg.display.set_caption('Kismet')
