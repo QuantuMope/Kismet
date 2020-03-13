@@ -1,14 +1,14 @@
 import pygame as pg
-from combat_system import combat_system
-from dialog_system import dialog_system
+from combat_system import CombatSystem
+from dialog_system import DialogSystem
 
 
 # Contains all parameters and methods that all map classes contain.
 # Serves as parent class to map classes.
-class base_map(combat_system, dialog_system):
+class BaseMap(CombatSystem, DialogSystem):
     def __init__(self, package):
-        combat_system.__init__(self, package)
-        dialog_system.__init__(self, package)
+        CombatSystem.__init__(self, package)
+        DialogSystem.__init__(self, package)
 
         # States.
         self.cutscene = False

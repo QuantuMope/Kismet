@@ -1,5 +1,5 @@
 import pygame as pg
-from Fursa_projectiles import SPIRIT_BLAST, blast_frames
+from Fursa_projectiles import SpiritBlast, BlastFrames
 
 
 # Fursa sprite. The main character of the game
@@ -17,7 +17,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         self.frame_speed = 200
         self.frame_index = 0
         # Projectile animation frames.
-        fursa_projectile = blast_frames(fi)
+        fursa_projectile = BlastFrames(fi)
         self.projectile_frames = fursa_projectile.frames
 
         # Sprite rect init.
@@ -49,12 +49,12 @@ class Fursa_sprite(pg.sprite.Sprite):
 
         # Load sound effects.
         self.fi.cd('Players Fursa')
-        self.jump_noise = pg.mixer.Sound("jump_02.wav")
-        self.attack_noise = pg.mixer.Sound("Electro_Current_Magic_Spell.wav")
-        self.attack_charge = pg.mixer.Sound("charge_up.wav")
-        self.walk_dirt = pg.mixer.Sound("stepdirt_7.wav")
+        self.jump_noise = pg.mixer.Sound(fi.path("jump_02.wav"))
+        self.attack_noise = pg.mixer.Sound(fi.path("Electro_Current_Magic_Spell.wav"))
+        self.attack_charge = pg.mixer.Sound(fi.path("charge_up.wav"))
+        self.walk_dirt = pg.mixer.Sound(fi.path("stepdirt_7.wav"))
         self.walk_dirt.set_volume(0.15)
-        self.teleport_noise = pg.mixer.Sound('teleport.wav')
+        self.teleport_noise = pg.mixer.Sound(fi.path('teleport.wav'))
 
         # Character attributes and battle states.
         self.level = 1
@@ -113,7 +113,7 @@ class Fursa_sprite(pg.sprite.Sprite):
         for i, directory in enumerate(directories):
             self.fi.cd(directory)
             for img_file in self.fi.file_list():
-                self.all_frames[i].append(pg.transform.scale(pg.image.load(img_file).convert_alpha(), (128, 128)))
+                self.all_frames[i].append(pg.transform.scale(pg.image.load(self.fi.path(img_file)).convert_alpha(), (128, 128)))
         # Hit animation is simply the first couple of frames from the death animation.
         self.all_frames[6] = (self.all_frames[5][0:7])
 
@@ -412,7 +412,7 @@ class Fursa_sprite(pg.sprite.Sprite):
                     self.attack_charge.play()
                 elif self.frame_index == 8:
                     self.attack_noise.play()
-                    blast = SPIRIT_BLAST(self)
+                    blast = SpiritBlast(self)
                     sprites['particles'].add(blast)
 
         # Gravity emulation using map platforms.

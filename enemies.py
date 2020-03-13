@@ -52,7 +52,7 @@ class skeleton(pg.sprite.Sprite):
 
         # Load sound effects.
         self.fi.cd("Enemies Skeleton")
-        self.swing_sound = pg.mixer.Sound('swing.wav')
+        self.swing_sound = pg.mixer.Sound(self.fi.path('swing.wav'))
 
     # Skeleton AI.
     def AI(self, time, dt, fursa, particle_sprites):
@@ -228,7 +228,6 @@ class skeleton(pg.sprite.Sprite):
 
 
     def update(self, time, dt, map, fursa, particle_sprites):
-
         """ Main update function. Continuously called at all times in game loop main()
             Updates skeleton's frame and hitbox. Monitors platform interaction.
             Monitors whether open world, cutscene, or battle controls should be enabled. """

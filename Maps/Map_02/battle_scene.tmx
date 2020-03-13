@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.2" tiledversion="1.2.2" orientation="orthogonal" renderorder="right-down" width="120" height="68" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="15">
- <tileset firstgid="1" source="../tiles/Base Tiles.tsx"/>
- <tileset firstgid="1161" source="../tiles/sea.tsx"/>
- <tileset firstgid="1203" source="../tiles/clouds.tsx"/>
- <tileset firstgid="1679" source="../tiles/sky.tsx"/>
+ <tileset firstgid="1" source="Base Tiles.tsx"/>
+ <tileset firstgid="1161" source="sea.tsx"/>
+ <tileset firstgid="1203" source="clouds.tsx"/>
+ <tileset firstgid="1679" source="sky.tsx"/>
  <layer id="1" name="Sky &amp; Sea" width="120" height="68">
   <data encoding="csv">
 1681,1682,1683,1684,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1685,1681,1682,1683,1684,1685,1685,1685,1685,1685,1685,1685,1692,1692,1692,1692,1692,1699,1699,1699,1679,1680,1681,1682,1683,1684,1685,1692,1692,1692,1692,1692,1685,1685,1685,1699,1699,1699,1699,1699,1699,1699,1699,1699,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1692,1682,1683,1684,1685,1685,1685,1686,1679,1680,1681,1682,1683,1684,1685,1685,1685,1680,1681,1682,1683,1684,1685,1682,1683,1684,1685,1692,1692,1692,1692,1692,1692,1692,1692,

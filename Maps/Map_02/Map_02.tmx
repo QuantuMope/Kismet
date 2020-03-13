@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.2" tiledversion="1.2.2" orientation="orthogonal" renderorder="right-down" width="160" height="68" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="6">
- <tileset firstgid="1" source="../tiles/Base Tiles.tsx"/>
- <tileset firstgid="1161" source="../tiles/clouds.tsx"/>
- <tileset firstgid="1637" source="../tiles/far-grounds.tsx"/>
- <tileset firstgid="1865" source="../tiles/sea.tsx"/>
- <tileset firstgid="1907" source="../tiles/sky.tsx"/>
- <tileset firstgid="2040" source="../Map_01/clouds.tsx"/>
- <tileset firstgid="2516" source="../Map_01/far-grounds.tsx"/>
+ <tileset firstgid="1" source="Base Tiles.tsx"/>
+ <tileset firstgid="1161" source="clouds.tsx"/>
+ <tileset firstgid="1637" source="far-grounds.tsx"/>
+ <tileset firstgid="1865" source="sea.tsx"/>
+ <tileset firstgid="1907" source="sky.tsx"/>
+ <tileset firstgid="2040" source="clouds.tsx"/>
+ <tileset firstgid="2516" source="far-grounds.tsx"/>
  <layer id="7" name="Sea &amp; Sky" width="160" height="68">
   <data encoding="csv">
 1907,1908,1909,1910,1911,1912,1913,1913,1913,1913,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1920,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1913,1920,1908,1909,1910,1911,1912,1913,1927,1941,1935,1907,1908,1909,1910,1911,1912,1928,1928,1907,1907,1908,1909,1910,1911,

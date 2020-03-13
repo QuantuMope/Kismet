@@ -47,7 +47,7 @@ class Masir_sprite(pg.sprite.Sprite):
         for i, directory in enumerate(directories):
             self.fi.cd(directory)
             for img_file in self.fi.file_list():
-                self.all_frames[i].append(pg.transform.scale(pg.image.load(img_file).convert_alpha(), (256, 256)))
+                self.all_frames[i].append(pg.transform.scale(pg.image.load(self.fi.path(img_file)).convert_alpha(), (256, 256)))
 
         # Create a list of number of frames for each animation. Used to know when frame_index should be reset.
         self.frame_maxes = [len(images) for images in self.all_frames]

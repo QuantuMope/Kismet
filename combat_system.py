@@ -4,7 +4,7 @@ from operator import itemgetter
 
 # Takes care of the combat system in map classes.
 # Serves as one of the sibling parent class for base_map.
-class combat_system():
+class CombatSystem:
     def __init__(self, package):
 
         self.status_box = package['statusBox']
@@ -48,8 +48,7 @@ class combat_system():
         self.combat_selector = {1: attack_select,
                                 2: bag_select,
                                 3: run_select,
-                                4: spell_select
-                                }
+                                4: spell_select}
 
     def combat_descrip(self, text, screen):
         # Function to render and blit combat move descriptions.
@@ -105,7 +104,7 @@ class combat_system():
 
         # Initiate music.
         self.fi.cd('Maps Map_02')
-        battle_music = pg.mixer.music.load('300-B - Blood of Lilith (Loop, MP3).mp3')
+        battle_music = pg.mixer.music.load(self.fi.path('300-B - Blood of Lilith (Loop, MP3).mp3'))
         pg.mixer.music.play(loops=-1, start=0.0)
 
         # Initialize states.
@@ -128,7 +127,6 @@ class combat_system():
                                   Ally                       |                  Enemies
 
 Spawn Location Indexes    ------0---------1-----------2----------6-----------4---------5--------6------"""
-
 
     def battle_event(self, fursa, enemy_sprites, screen):
 

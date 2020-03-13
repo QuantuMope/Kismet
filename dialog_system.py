@@ -1,9 +1,10 @@
 import pygame as pg
+import pathlib
 
 
 # Takes care of the dialog system in map classes.
 # Serves as one of the sibling parent class for base_map.
-class dialog_system():
+class DialogSystem:
     def __init__(self, package):
 
         # Dialog parameters.
@@ -21,7 +22,8 @@ class dialog_system():
         self.a = 0
         self.i = 0
 
-    def black_edges(self, screen):
+    @staticmethod
+    def black_edges(screen):
         # Blackout the bottom and top of the screen during dialogue.
         black = (0, 0, 0)
         pg.draw.rect(screen, black, (0, 0, 1920, 200))

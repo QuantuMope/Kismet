@@ -24,8 +24,8 @@ class enemy_sprite_frames():
 
         self.skeleton_frame_maxes = [len(frame_amount) for frame_amount in coordinates]
 
-        spritesheets = [spritesheet(sprite_sheet) for sprite_sheet in self.fi.file_list()]
-        spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey = (0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
+        spritesheets = [spritesheet(self.fi.path(sprite_sheet)) for sprite_sheet in self.fi.file_list()]
+        spritesheets_separate = [spritesheet.images_at(coordinates[i], colorkey=(0, 0, 0)) for i, spritesheet in enumerate(spritesheets)]
 
         for i, ss_sep in enumerate(spritesheets_separate):
             scaled_frames = [pg.transform.scale(ss_sep[e], sizes[i]) for e in range(0, len(ss_sep))]

@@ -6,14 +6,14 @@ from spritesheet import spritesheet
 # Import Game Modules
 from Fursa import Fursa_sprite
 from enemy_frames import enemy_sprite_frames
-from Map_01 import Map_01
-from Map_02 import Map_02
+from map01 import Map01
+from map02 import Map02
 
 
 # Files class is in Kismet.py because a single file object is declared
 # locally that assigns the main base directory. The file object is then
 # passed down to other classes.
-class files():
+class FileNavigator:
     def __init__(self):
         base_path = os.path.dirname(os.path.realpath(__file__))
         self.main_directory = base_path
@@ -23,20 +23,23 @@ class files():
         characters = list(path)
         for i, letter in enumerate(characters):
             if letter == ' ':
-                characters[i] = '\\'
-        new_path = '\\' + ''.join(characters)
+                characters[i] = '/'
+        new_path = '/' + ''.join(characters)
 
         final_path = self.main_directory + new_path
-        os.chdir(final_path)
+        # os.chdir(final_path)
         self.current_directory = final_path
 
     def file_list(self):
         files = os.listdir(self.current_directory)
         return files
 
+    def path(self, file_name):
+        return self.current_directory + '/' + file_name
+
 
 def main():
-    fi = files()
+    fi = FileNavigator()
     # Initiate pygame parameters.
     pg.mixer.pre_init(44100, -16, 2, 1024)
     pg.init()
@@ -53,26 +56,26 @@ def main():
 
     # Dialog Initialization.
     fi.cd('UI Dialog')
-    dialog_box = pg.image.load('dialogue_box.png').convert_alpha()
+    dialog_box = pg.image.load(fi.path('dialogue_box.png')).convert_alpha()
     dialog_box = pg.transform.scale(dialog_box, (795, 195))
-    dialog_font = pg.freetype.Font('eight-bit-dragon.otf', size=24)
-    dialog_noise = pg.mixer.Sound('chat_noise.wav')
+    dialog_font = pg.freetype.Font(fi.path('eight-bit-dragon.otf'), size=24)
+    dialog_noise = pg.mixer.Sound(fi.path('chat_noise.wav'))
 
     # User interface boxes. There is a combat, status, and description box.
     fi.cd('UI Combat')
-    base_box = pg.image.load('Combat UI Box transparent.png').convert_alpha()
+    base_box = pg.image.load(fi.path('Combat UI Box transparent.png')).convert_alpha()
     status_box = pg.transform.scale(base_box, (670, 300))
     combat_box = pg.transform.scale(base_box, (690, 300))
     description_box = pg.transform.scale(base_box, (460, 300))
     # Pointer indicating whose turn it is during a battle.
-    pointer = pg.image.load('black_triangle.png').convert_alpha()
+    pointer = pg.image.load(fi.path('black_triangle.png')).convert_alpha()
     pointer = pg.transform.scale(pointer, (60, 42))
-    battle_sword_aftersound = pg.mixer.Sound('battle_sword_aftersound.wav')
-    battle_impact_noise = pg.mixer.Sound('battle_start.wav')
+    battle_sword_aftersound = pg.mixer.Sound(fi.path('battle_sword_aftersound.wav'))
+    battle_impact_noise = pg.mixer.Sound(fi.path('battle_start.wav'))
     fi.cd('UI Fonts')
-    combat_font = pg.freetype.Font('ferrum.otf', size=24)
-    hpmp_font = pg.freetype.Font('DisposableDroidBB_ital.ttf', size=24)
-    fps_font = pg.freetype.Font('digital-7.ttf', size=48)
+    combat_font = pg.freetype.Font(fi.path('ferrum.otf'), size=24)
+    hpmp_font = pg.freetype.Font(fi.path('DisposableDroidBB_ital.ttf'), size=24)
+    fps_font = pg.freetype.Font(fi.path('digital-7.ttf'), size=48)
 
     # Portal animation.
     fi.cd('Maps')
@@ -80,12 +83,12 @@ def main():
     for i in range(0, 7):
         coordinates.extend([(100 * e, 100 * i, 100, 100) for e in range(0, 8)])
     coordinates.extend([(100 * e, 700, 100, 100) for e in range(0, 5)])
-    portal_images_ss = spritesheet('12_nebula_spritesheet.png')
+    portal_images_ss = spritesheet(fi.path('12_nebula_spritesheet.png'))
     portal_images_separate = portal_images_ss.images_at(coordinates, colorkey=(0, 0, 0))
     portal_images = [pg.transform.scale(portal_images_separate[i], (160, 160))
                      for i in range(0, len(portal_images_separate))]
-    portal_blast = pg.mixer.Sound('portal_noise.wav')
-    portal_aura = pg.mixer.Sound('portal_aura_noise.wav')
+    portal_blast = pg.mixer.Sound(fi.path('portal_noise.wav'))
+    portal_aura = pg.mixer.Sound(fi.path('portal_aura_noise.wav'))
 
     package = {"dialogBox": dialog_box,
                "dialogFont": dialog_font,
@@ -117,10 +120,10 @@ def main():
 
     # Declare Initial Map.
     # Test
-    #current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
+    # current_map = Tutorial_Area = Map02(package, sprites, enemy_images, fi)
 
     #Normal
-    Starting_Area = Map_01(package, sprites, fi)
+    Starting_Area = Map01(package, sprites, fi)
     current_map = Starting_Area
 
     # Declare internal variables.
@@ -225,7 +228,7 @@ def main():
             map_index += 1
             if map_index == 1:
                 # Initializes new map and spawns Fursa appropriately.
-                current_map = Tutorial_Area = Map_02(package, sprites, enemy_images, fi)
+                current_map = Tutorial_Area = Map02(package, sprites, enemy_images, fi)
                 fursa.rect.x = current_map.spawnx
                 fursa.rect.y = current_map.spawny
             fursa.map_forward = False

@@ -2,7 +2,7 @@ from spritesheet import spritesheet
 import pygame as pg
 
 
-class blast_frames():
+class BlastFrames:
 
     """ Class simply containing projectile frames of various attacks.
         Created to avoid having to load from the hard drive every time a projectile is created.
@@ -12,16 +12,16 @@ class blast_frames():
         self.fi = fi
         # Fursa's attack blast properly separated into frames into a list from a spritesheet.
         self.fi.cd("Players Fursa")
-        coordinates = [(128 * i, 0, 128, 128) for i in range(0,8)]
-        blast_image_ss = spritesheet('EnergyBall.png')
-        blast_images_separate = blast_image_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        coordinates = [(128 * i, 0, 128, 128) for i in range(0, 8)]
+        blast_image_ss = spritesheet(self.fi.path('EnergyBall.png'))
+        blast_images_separate = blast_image_ss.images_at(coordinates, colorkey=(0, 0, 0))
         self.blast_frames_r = [pg.transform.scale(blast_images_separate[i], (64, 64)) for i in range(0, len(blast_images_separate))]
         self.blast_frames_l = [pg.transform.flip(self.blast_frames_r[i], True, False) for i in range(0, len(self.blast_frames_r))]
 
         # Impact frames.
-        coordinates = [(0, 128 * i, 128, 128) for i in range(0,8)]
-        impact_images_ss = spritesheet('energyBallImpact.png')
-        impact_images_separate = impact_images_ss.images_at(coordinates, colorkey = (0, 0, 0))
+        coordinates = [(0, 128 * i, 128, 128) for i in range(0, 8)]
+        impact_images_ss = spritesheet(self.fi.path('energyBallImpact.png'))
+        impact_images_separate = impact_images_ss.images_at(coordinates, colorkey=(0, 0, 0))
         self.impact_frames_r = [pg.transform.scale(impact_images_separate[i], (64, 64)) for i in range(0, len(impact_images_separate))]
         self.impact_frames_l = [pg.transform.flip(self.impact_frames_r[i], True, False) for i in range(0, len(self.impact_frames_r))]
 
@@ -29,7 +29,7 @@ class blast_frames():
 
 
 # Fursa's SPIRIT BLAST projectile sprite.
-class SPIRIT_BLAST(pg.sprite.Sprite):
+class SpiritBlast(pg.sprite.Sprite):
     def __init__(self, fursa):
         super().__init__()
         # Store projectile frames.
