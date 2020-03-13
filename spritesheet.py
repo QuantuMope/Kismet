@@ -1,7 +1,7 @@
 import pygame as pg
 
 # Spritesheet class to split sprite sheets into proper single frames.
-class spritesheet(object):
+class SpriteSheet(object):
     def __init__(self, filename):
         self.sheet = pg.image.load(filename).convert()
 

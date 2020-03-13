@@ -1,7 +1,7 @@
 import pygame as pg
 
 
-class skeleton(pg.sprite.Sprite):
+class Skeleton(pg.sprite.Sprite):
     def __init__(self, frames, spawnx, spawny, fi):
         super().__init__()
         self.fi = fi
@@ -225,7 +225,6 @@ class skeleton(pg.sprite.Sprite):
             self.change_state_check = True
             self.pstate = self.prev_state
             self.cstate = self.state
-
 
     def update(self, time, dt, map, fursa, particle_sprites):
         """ Main update function. Continuously called at all times in game loop main()

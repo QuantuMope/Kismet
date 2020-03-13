@@ -1,6 +1,6 @@
 import pygame as pg
 from TiledMap import TiledMap
-from enemies import skeleton
+from enemies import Skeleton
 from base_map import BaseMap
 
 
@@ -32,25 +32,25 @@ class Map02(BaseMap):
         self.battle_map.front_surface.blit(self.description_box, (1410, 750))
 
         # Declare enemys.
-        skeleton_01 = skeleton(enemy_frames, 600, 500, self.fi)
+        skeleton_01 = Skeleton(enemy_frames, 600, 500, self.fi)
         sprites['enemy'].add(skeleton_01)
 
         # The script is labeled using self.event. Each dialogue references a list containing two strings.
         # The first is the actual dialogue while the second is the speaker.
-        self.script = {                0: ["Where'd you go?",   'Fursa'],
-                                       1: ["*A voice starts to sound in Fursa's mind.*", ''],
-                                       2: ["I am watching from afar, my child.", 'Masir'],
-                                       3: ["I am afraid I must limit my aid. You must learn how to use your powers again.", 'Masir'],
-                                       4: ["An evil enemy is up ahead. Go and vanquish it.", 'Masir']
-                                      #  5  exits dialogue.
+        self.script = {  0: ["Where'd you go?",   'Fursa'],
+                         1: ["*A voice starts to sound in Fursa's mind.*", ''],
+                         2: ["I am watching from afar, my child.", 'Masir'],
+                         3: ["I am afraid I must limit my aid. You must learn how to use your powers again.", 'Masir'],
+                         4: ["An evil enemy is up ahead. Go and vanquish it.", 'Masir']
+                        #  5  exits dialogue.
 
-                                      #  6: ["Your name is Fursa. You are the son of Chaos.", '???'],
-                                      # #7 is Masir portal scene.
-                                      #  8: ["In the ancient tongue, your name means... chance.", '???'],
-                                      #  9: ["Please follow me, as we have much to accomplish.", '???'],
-                                      #  10:["Wait. What is your name?", 'Fursa'],
-                                      #  11:["You may call me Masir, little one.", 'Masir']
-                                      }
+                        #  6: ["Your name is Fursa. You are the son of Chaos.", '???'],
+                        # #7 is Masir portal scene.
+                        #  8: ["In the ancient tongue, your name means... chance.", '???'],
+                        #  9: ["Please follow me, as we have much to accomplish.", '???'],
+                        #  10:["Wait. What is your name?", 'Fursa'],
+                        #  11:["You may call me Masir, little one.", 'Masir']
+                        }
 
     def cutscene_event(self, fursa, screen):
 
