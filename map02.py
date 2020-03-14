@@ -32,7 +32,7 @@ class Map02(BaseMap):
         self.battle_map.front_surface.blit(self.description_box, (1410, 750))
 
         # Declare enemys.
-        skeleton_01 = Skeleton(enemy_frames, 600, 500, self.fi)
+        skeleton_01 = Skeleton(enemy_frames, 900, 500, self.fi)
         sprites['enemy'].add(skeleton_01)
 
         # The script is labeled using self.event. Each dialogue references a list containing two strings.
